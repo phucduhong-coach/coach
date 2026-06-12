@@ -39,10 +39,10 @@
 //   - appId       : (Picker) Project number của dự án Google Cloud. Tuỳ chọn.
 // ============================================================================
 const DRIVE_CONFIG = {
-  clientId: '', // FILL_IN_AFTER_TASK_15_1
-  redirectUri: '', // FILL_IN_AFTER_TASK_15_1
-  apiKey: '', // FILL_IN_AFTER_TASK_15_1 (Picker developer key — tuỳ chọn)
-  appId: '', // FILL_IN_AFTER_TASK_15_1 (Picker app/project id — tuỳ chọn)
+  clientId: '73756387461-5ebq2o38g8g9lg0h79c4md8h9cc56762.apps.googleusercontent.com',
+  redirectUri: 'https://phucduhong-coach.github.io/coach/pwa/index.html',
+  apiKey: '', // (Picker developer key — tuỳ chọn; để '' vẫn chạy)
+  appId: '73756387461', // Project number (cho Google Picker)
 };
 
 // ---- Hằng số phạm vi & endpoint (KHÔNG đổi) --------------------------------
