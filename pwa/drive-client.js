@@ -42,6 +42,7 @@
 // ============================================================================
 const DRIVE_CONFIG = {
   clientId: '73756387461-5ebq2o38g8g9lg0h79c4md8h9cc56762.apps.googleusercontent.com',
+  clientSecret: '', // FILL_IN: "Client secret" của OAuth client (Web application) trong Google Cloud
   redirectUri: 'https://phucduhong-coach.github.io/coach/pwa/index.html',
   apiKey: '', // (Picker developer key — tuỳ chọn; để '' vẫn chạy)
   appId: '73756387461', // Project number (cho Google Picker)
@@ -152,6 +153,7 @@ function requireConfig() {
 function configureDrive(cfg) {
   if (cfg && typeof cfg === 'object') {
     if (cfg.clientId != null) DRIVE_CONFIG.clientId = String(cfg.clientId);
+    if (cfg.clientSecret != null) DRIVE_CONFIG.clientSecret = String(cfg.clientSecret);
     if (cfg.redirectUri != null) DRIVE_CONFIG.redirectUri = String(cfg.redirectUri);
     if (cfg.apiKey != null) DRIVE_CONFIG.apiKey = String(cfg.apiKey);
     if (cfg.appId != null) DRIVE_CONFIG.appId = String(cfg.appId);
@@ -229,171 +231,143 @@ function buildAuthUrl(codeChallenge, state) {
   return `${AUTH_ENDPOINT}?${params.toString()}`;
 }
 
-// Đổi authorization code lấy token (PKCE — không client secret).
-async function exchangeCodeForTokens(code, verifier) {
+// ============================================================================
+// Google Identity Services (GIS) — token client cho ứng dụng web (KHÔNG cần secret)
+// ----------------------------------------------------------------------------
+// Google chặn dùng client_secret trong trình duyệt; cách chuẩn cho web app là GIS
+// token model: initTokenClient + requestAccessToken() trả access token ngay trên
+// trình duyệt (popup), không client_secret, không refresh token (token ~1 giờ; khi
+// online app tự xin token mới — im lặng nếu phiên Google còn hiệu lực).
+// Yêu cầu: origin trang phải nằm trong "Authorized JavaScript origins" của OAuth client.
+// (YC10.1 OAuth, YC11.1 HTTPS, YC11.2 chỉ drive.file)
+// ============================================================================
+
+const GIS_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
+let _gisReady = null; // Promise nạp GIS (singleton)
+let _tokenClient = null; // GIS token client (singleton)
+let _pendingToken = null; // { resolve, reject } cho lần requestAccessToken đang chờ
+
+// Nạp script GIS (singleton). accounts.google.com nằm trong NETWORK_ONLY của SW ⇒ luôn từ mạng.
+function loadGis() {
+  if (_gisReady) return _gisReady;
+  _gisReady = new Promise((resolve, reject) => {
+    const g = getGlobal();
+    if (!g || !g.document) {
+      reject(new Error('Google Identity Services chỉ chạy trong trình duyệt.'));
+      return;
+    }
+    if (g.google && g.google.accounts && g.google.accounts.oauth2) {
+      resolve(g.google.accounts.oauth2);
+      return;
+    }
+    const existing = g.document.querySelector(`script[src="${GIS_SCRIPT_SRC}"]`);
+    const script = existing || g.document.createElement('script');
+    script.src = GIS_SCRIPT_SRC;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener(
+      'load',
+      () => {
+        if (g.google && g.google.accounts && g.google.accounts.oauth2) {
+          resolve(g.google.accounts.oauth2);
+        } else {
+          reject(new Error('Không khởi tạo được Google Identity Services.'));
+        }
+      },
+      { once: true }
+    );
+    script.addEventListener('error', () => reject(new Error(`Không tải được ${GIS_SCRIPT_SRC}`)), {
+      once: true,
+    });
+    if (!existing) g.document.body.appendChild(script);
+  }).catch((err) => {
+    _gisReady = null; // cho phép thử lại
+    throw err;
+  });
+  return _gisReady;
+}
+
+// Khởi tạo token client một lần; callback/error_callback điều phối tới _pendingToken.
+function getTokenClient(oauth2) {
+  if (_tokenClient) return _tokenClient;
   const cfg = requireConfig();
-  const body = new URLSearchParams({
+  _tokenClient = oauth2.initTokenClient({
     client_id: cfg.clientId,
-    code,
-    code_verifier: verifier,
-    grant_type: 'authorization_code',
-    redirect_uri: cfg.redirectUri,
+    scope: DRIVE_SCOPE,
+    callback: (resp) => {
+      const p = _pendingToken;
+      _pendingToken = null;
+      if (!p) return;
+      if (resp && resp.error) {
+        p.reject(new AuthExpired('GIS: ' + (resp.error_description || resp.error)));
+        return;
+      }
+      if (!resp || !resp.access_token) {
+        p.reject(new AuthExpired('GIS không trả access token.'));
+        return;
+      }
+      _accessToken = resp.access_token;
+      _accessTokenExpiry = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
+      p.resolve(resp.access_token);
+    },
+    error_callback: (err) => {
+      const p = _pendingToken;
+      _pendingToken = null;
+      if (p) p.reject(new AuthExpired('GIS lỗi: ' + (err && (err.type || err.message) || 'unknown')));
+    },
   });
-  const resp = await fetch(TOKEN_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: body.toString(),
-  });
-  if (!resp.ok) {
-    const text = await safeText(resp);
-    throw new Error(`Đổi mã uỷ quyền thất bại (${resp.status}): ${text}`);
-  }
-  return resp.json();
+  return _tokenClient;
 }
 
-// Gỡ ?code=&state= khỏi thanh địa chỉ sau khi đổi token (không để lộ trong lịch sử).
-function cleanCallbackUrl() {
-  const g = getGlobal();
-  if (g && g.history && typeof g.history.replaceState === 'function' && g.location) {
-    const clean = g.location.origin + g.location.pathname;
-    g.history.replaceState({}, document.title, clean);
-  }
+// requestToken(prompt) → mở luồng GIS lấy access token.
+//   prompt 'consent' = hiện màn đồng ý (lần đầu); '' = im lặng nếu đã đồng ý + còn phiên.
+function requestToken(prompt) {
+  return loadGis().then((oauth2) => {
+    const client = getTokenClient(oauth2);
+    return new Promise((resolve, reject) => {
+      _pendingToken = { resolve, reject };
+      try {
+        client.requestAccessToken(prompt != null ? { prompt } : {});
+      } catch (err) {
+        _pendingToken = null;
+        reject(err);
+      }
+    });
+  });
 }
 
-// connectGoogle() → khởi động hoặc hoàn tất luồng OAuth PKCE.
-//   - Nếu URL hiện tại có ?code=&state= (quay lại từ Google): đổi code lấy token,
-//     lưu refresh token (IndexedDB), giữ access token trong RAM → trả { ok:true }.
-//   - Ngược lại: sinh PKCE verifier/challenge + state, lưu vào sessionStorage,
-//     và chuyển hướng tới màn hình đồng ý Google (hàm không trả về vì trang điều hướng).
-// (YC10.1 OAuth, YC10.2 lưu uỷ quyền, YC11.2 chỉ drive.file)
+// connectGoogle() → mở popup chọn tài khoản + đồng ý (lần đầu), lấy access token (GIS).
+// Lưu một "sentinel" để app biết đã kết nối (giữ tương thích checkConnected cũ). { ok:true }.
 async function connectGoogle() {
   assertSecureContext();
   requireConfig();
-
-  const g = getGlobal();
-  const search = (g && g.location && g.location.search) || '';
-  const params = new URLSearchParams(search);
-  const code = params.get('code');
-  const returnedState = params.get('state');
-  const oauthError = params.get('error');
-
-  if (oauthError) {
-    // Người dùng từ chối hoặc lỗi đồng ý.
-    clearPkceSession();
-    cleanCallbackUrl();
-    throw new Error(`OAuth bị từ chối/ lỗi: ${oauthError}`);
+  await requestToken('consent');
+  try {
+    await getStore().setMeta(META_REFRESH_TOKEN, 'gis');
+  } catch (_) {
+    /* không chặn nếu lưu meta lỗi */
   }
-
-  if (code) {
-    // ----- Pha callback: hoàn tất đổi token -----
-    const expectedState = ssGet(SS_STATE);
-    const verifier = ssGet(SS_VERIFIER);
-    if (!verifier || !expectedState || returnedState !== expectedState) {
-      clearPkceSession();
-      throw new Error('Trạng thái OAuth không khớp (state) — huỷ để tránh CSRF.');
-    }
-    const tokens = await exchangeCodeForTokens(code, verifier);
-    await persistTokens(tokens);
-    clearPkceSession();
-    cleanCallbackUrl();
-    return { ok: true };
-  }
-
-  // ----- Pha khởi động: chuyển hướng tới Google -----
-  const verifier = generateCodeVerifier();
-  const challenge = await deriveCodeChallenge(verifier);
-  const state = generateState();
-  ssSet(SS_VERIFIER, verifier);
-  ssSet(SS_STATE, state);
-
-  const url = buildAuthUrl(challenge, state);
-  if (g && g.location && typeof g.location.assign === 'function') {
-    g.location.assign(url);
-  }
-  // Trang đang điều hướng đi; trả cờ để gọi viên biết đã bắt đầu redirect.
-  return { ok: false, redirecting: true };
-}
-
-// Lưu token sau khi đổi/refresh: refresh token → IndexedDB; access token → RAM.
-async function persistTokens(tokens) {
-  if (!tokens || typeof tokens !== 'object') {
-    throw new Error('Phản hồi token rỗng/không hợp lệ.');
-  }
-  const store = getStore();
-  if (tokens.refresh_token) {
-    // Chỉ Google trả refresh_token khi access_type=offline + prompt=consent.
-    await store.setMeta(META_REFRESH_TOKEN, tokens.refresh_token);
-  }
-  if (tokens.access_token) {
-    _accessToken = tokens.access_token;
-    const expiresInMs = (Number(tokens.expires_in) || 0) * 1000;
-    _accessTokenExpiry = Date.now() + expiresInMs;
-  }
-  return tokens;
+  return { ok: true };
 }
 
 // ============================================================================
-// ensureAccessToken — tự refresh; ném AuthExpired khi hỏng/bị thu hồi
+// ensureAccessToken — trả access token còn hiệu lực; ném AuthExpired khi cần kết nối lại
 // ============================================================================
 
-// ensureAccessToken() → trả access token còn hiệu lực.
+// ensureAccessToken() → access token còn hạn (RAM) hoặc xin token mới im lặng qua GIS.
 //   - Còn token trong RAM và chưa tới hạn (trừ đệm) ⇒ trả ngay.
-//   - Ngược lại refresh bằng refresh token trong IndexedDB (YC10.3).
-//   - Không có refresh token / refresh thất bại / bị thu hồi ⇒ ném AuthExpired (YC10.4).
+//   - Ngược lại requestAccessToken({prompt:''}) — im lặng nếu phiên Google còn hiệu lực (YC10.3).
+//   - Thất bại/cần tương tác ⇒ ném AuthExpired để UI hướng dẫn Kết_Nối_Google lại (YC10.4).
 async function ensureAccessToken() {
   assertSecureContext();
   if (_accessToken && Date.now() < _accessTokenExpiry - TOKEN_SKEW_MS) {
     return _accessToken;
   }
-  return refreshAccessToken();
-}
-
-async function refreshAccessToken() {
-  const cfg = requireConfig();
-  const store = getStore();
-  const refreshToken = await store.getMeta(META_REFRESH_TOKEN);
-  if (!refreshToken) {
-    throw new AuthExpired('Chưa Kết_Nối_Google (không có refresh token).');
-  }
-
-  const body = new URLSearchParams({
-    client_id: cfg.clientId,
-    refresh_token: refreshToken,
-    grant_type: 'refresh_token',
-  });
-
-  let resp;
   try {
-    resp = await fetch(TOKEN_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-    });
-  } catch (netErr) {
-    // Lỗi mạng KHÔNG đồng nghĩa token hết hạn — ném lỗi mạng để gọi viên thử lại.
-    const e = new Error('Không kết nối được tới Google để refresh token (mạng?).');
-    e.code = 'NetworkError';
-    e.cause = netErr;
-    throw e;
+    return await requestToken('');
+  } catch (err) {
+    throw err instanceof AuthExpired ? err : new AuthExpired('Không lấy được access token (GIS).', err);
   }
-
-  if (!resp.ok) {
-    // 400/401 với invalid_grant ⇒ refresh token bị thu hồi/hết hạn.
-    const text = await safeText(resp);
-    if (resp.status === 400 || resp.status === 401) {
-      throw new AuthExpired(`Refresh token bị từ chối (${resp.status}): ${text}`);
-    }
-    const e = new Error(`Refresh token lỗi (${resp.status}): ${text}`);
-    e.code = 'RefreshError';
-    throw e;
-  }
-
-  const tokens = await resp.json();
-  if (!tokens || !tokens.access_token) {
-    throw new AuthExpired('Phản hồi refresh không có access token.');
-  }
-  await persistTokens(tokens);
-  return _accessToken;
 }
 
 // ============================================================================
@@ -788,14 +762,9 @@ async function writeJson(name, obj, expectedModifiedTime) {
 // (xoá refresh token + dữ liệu khách trong IndexedDB). YC10.7 / YC11.3.
 async function disconnect() {
   const store = getStore();
-  // Ưu tiên thu hồi refresh token (thu hồi nó sẽ thu hồi cả access token liên quan).
-  let tokenToRevoke = null;
-  try {
-    tokenToRevoke = await store.getMeta(META_REFRESH_TOKEN);
-  } catch (_) {
-    /* bỏ qua — vẫn tiếp tục dọn dẹp */
-  }
-  if (!tokenToRevoke) tokenToRevoke = _accessToken;
+  // Với GIS, meta refreshToken chỉ là sentinel 'gis' (không phải token thật) ⇒ thu hồi
+  // access token thật đang giữ trong RAM nếu có.
+  const tokenToRevoke = (_accessToken && _accessToken !== 'gis') ? _accessToken : null;
 
   if (tokenToRevoke) {
     try {
