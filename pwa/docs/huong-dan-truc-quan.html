@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hướng dẫn trực quan — Ứng dụng Ghi Buổi Tập</title>
+<style>
+  :root{
+    --bg:#0f1216; --panel:#161b22; --panel2:#1d242d; --line:#2b3440;
+    --text:#e8edf2; --muted:#9aa7b4; --accent:#2f80ed; --accent2:#56ccf2;
+    --ok:#27ae60; --warn:#e2a23b; --danger:#e05a4f; --on-accent:#ffffff;
+    --mark:#e05a4f;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    line-height:1.6;font-size:17px}
+  header.top{position:sticky;top:0;z-index:20;background:rgba(15,18,22,.92);
+    backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:14px 18px}
+  header.top h1{margin:0;font-size:19px}
+  header.top p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .wrap{max-width:860px;margin:0 auto;padding:18px}
+  nav.toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:14px 18px;margin:18px 0}
+  nav.toc h2{margin:.2em 0 .5em;font-size:16px;color:var(--accent2)}
+  nav.toc a{color:var(--text);text-decoration:none;display:block;padding:7px 10px;
+    border-radius:8px;border:1px solid transparent}
+  nav.toc a:hover{background:var(--panel2);border-color:var(--line)}
+  nav.toc .big{font-weight:600}
+  nav.toc .sub{margin-left:16px;color:var(--muted);font-size:15px}
+  section{margin:34px 0;scroll-margin-top:74px}
+  h2.part{font-size:23px;border-left:5px solid var(--accent);padding-left:12px;margin-top:8px}
+  h3.step{font-size:19px;color:var(--accent2);margin:26px 0 6px}
+  .lead{color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:18px;margin:14px 0}
+  ol.steps{padding-left:0;list-style:none;margin:14px 0 0;counter-reset:s}
+  ol.steps>li{position:relative;padding:8px 0 8px 44px;counter-increment:s;border-bottom:1px dashed var(--line)}
+  ol.steps>li:last-child{border-bottom:0}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:8px;
+    width:30px;height:30px;border-radius:50%;background:var(--mark);color:#fff;
+    font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .tip{background:color-mix(in srgb,var(--accent) 12%,var(--panel));
+    border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));
+    border-radius:12px;padding:12px 14px;margin:14px 0}
+  .warn{background:color-mix(in srgb,var(--warn) 14%,var(--panel));
+    border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));
+    border-radius:12px;padding:12px 14px;margin:14px 0}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,var(--panel));
+    border:1px solid color-mix(in srgb,var(--ok) 45%,var(--line));
+    border-radius:12px;padding:12px 14px;margin:14px 0}
+  code{background:#0b0e12;border:1px solid var(--line);border-radius:6px;
+    padding:1px 6px;font-family:"Consolas",monospace;font-size:14px;color:var(--accent2);
+    word-break:break-all}
+  pre{background:#0b0e12;border:1px solid var(--line);border-radius:10px;padding:12px;
+    overflow:auto;font-size:14px}
+
+  /* ----- Mockup "screen replicas" ----- */
+  .shot{margin:16px 0}
+  .shot .cap{color:var(--muted);font-size:13px;margin:6px 2px 0;text-align:center}
+  .browser,.phone{background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;box-shadow:0 8px 26px rgba(0,0,0,.35)}
+  .browser .bar{display:flex;align-items:center;gap:6px;background:#0e1318;
+    padding:9px 12px;border-bottom:1px solid var(--line)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#e05a4f}.dot.y{background:#e2a23b}.dot.g{background:#27ae60}
+  .browser .url{flex:1;margin-left:10px;background:#1b2229;border:1px solid var(--line);
+    border-radius:7px;padding:5px 10px;color:var(--muted);font-size:13px;font-family:monospace;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .screen{position:relative;padding:16px;min-height:60px}
+  .phone{max-width:330px;margin:0 auto;border-radius:26px;border-width:6px}
+  .phone .notch{height:22px;background:#0e1318;display:flex;justify-content:center}
+  .phone .notch::after{content:"";width:120px;height:14px;background:#000;border-radius:0 0 12px 12px}
+  .phone .screen{min-height:120px}
+
+  /* fake UI bits */
+  .ui-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .ui-btn{display:inline-block;background:var(--accent);color:#fff;border-radius:8px;
+    padding:8px 14px;font-weight:600;font-size:14px}
+  .ui-btn.green{background:var(--ok)}.ui-btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .ui-btn.gray{background:#3a4654}
+  .ui-field{background:#0b0e12;border:1px solid var(--line);border-radius:7px;padding:8px 10px;
+    color:var(--muted);font-size:13px;flex:1;min-width:120px}
+  .ui-field.filled{color:var(--text)}
+  .ui-pill{background:#0b0e12;border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:13px}
+  .ui-tab{padding:8px 12px;border-bottom:2px solid transparent;color:var(--muted);font-size:14px}
+  .ui-tab.active{color:var(--text);border-bottom-color:var(--accent)}
+  .ui-menu{background:#0b0e12;border:1px solid var(--line);border-radius:10px;padding:6px;width:230px}
+  .ui-menu .mi{padding:8px 10px;border-radius:6px;font-size:14px}
+  .ui-menu .mi:hover{background:var(--panel2)}
+  .ui-card{background:#0b0e12;border:1px solid var(--line);border-radius:10px;padding:12px;margin:6px 0}
+  .ui-check{width:18px;height:18px;border:2px solid var(--accent);border-radius:4px;display:inline-block;
+    background:var(--accent);position:relative}
+  .ui-check::after{content:"✓";color:#fff;font-size:13px;position:absolute;left:2px;top:-2px}
+  .muted{color:var(--muted)} .small{font-size:13px}
+
+  /* red callout marker placed over the spot to click */
+  .mark{position:absolute;width:30px;height:30px;border-radius:50%;background:var(--mark);
+    color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;
+    font-size:15px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:3}
+  .ring{position:absolute;border:3px solid var(--mark);border-radius:10px;z-index:2;
+    box-shadow:0 0 0 3px rgba(224,90,79,.25)}
+  .arrow{position:absolute;color:var(--mark);font-size:26px;z-index:3;font-weight:900}
+
+  .legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  .legend .mk{width:24px;height:24px;border-radius:50%;background:var(--mark);color:#fff;
+    display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  footer{color:var(--muted);font-size:13px;text-align:center;padding:30px 0}
+  .pill-time{display:inline-block;background:var(--panel2);border:1px solid var(--line);
+    border-radius:20px;padding:3px 12px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>📱 Hướng dẫn trực quan — Ứng dụng Ghi Buổi Tập</h1>
+  <p>Dành cho huấn luyện viên · không cần biết kỹ thuật · làm theo các số đỏ trên hình</p>
+</header>
+<div class="wrap">
+
+  <div class="tip">
+    <b>Cách đọc hình trong tài liệu này:</b> Mỗi hình là <b>bản vẽ mô phỏng</b> màn hình thật bạn sẽ thấy.
+    Các <span class="legend" style="display:inline-flex"><span class="mk">1</span></span>
+    <b>số đỏ</b> đặt ngay chỗ cần bấm, khớp với danh sách bước bên dưới hình. Màn hình thật có thể hơi khác
+    về màu/vị trí, nhưng <b>tên nút và thứ tự thì giống</b>.
+  </div>
+
+  <nav class="toc">
+    <h2>Bạn sẽ đi qua 3 phần (chỉ làm 1 lần)</h2>
+    <a class="big" href="#tongquan">🗺️ Bức tranh tổng thể — hiểu mình đang làm gì</a>
+    <a class="big" href="#phanA">Phần A · Đưa app lên mạng (GitHub Pages) <span class="pill-time">~15 phút</span></a>
+    <a class="big" href="#phanB">Phần B · Tạo kết nối Google (một lần) <span class="pill-time">~15 phút</span></a>
+    <a class="big" href="#phanC">Phần C · Kết nối &amp; cài app ra điện thoại <span class="pill-time">~5 phút</span></a>
+    <a class="sub" href="#hangngay">▶ Dùng hằng ngày (sau khi xong)</a>
+    <a class="sub" href="#sucos">▶ Xử lý sự cố thường gặp</a>
+  </nav>
+
+  <!-- ================= TỔNG QUAN ================= -->
+  <section id="tongquan">
+    <h2 class="part">🗺️ Bức tranh tổng thể</h2>
+    <p class="lead">App "Ghi Buổi Tập" là một trang web nhỏ, cài ra màn hình điện thoại để ghi số liệu buổi tập
+      ngay tại phòng gym (kể cả khi mất mạng). Để chạy được, bạn làm <b>3 việc một lần</b> theo đúng thứ tự:</p>
+
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">sơ đồ tổng thể</span></div>
+        <div class="screen" style="min-height:auto">
+          <div class="ui-card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <span class="ui-btn gray">A</span>
+            <b>Đưa app lên mạng</b> <span class="muted small">→ bạn nhận được một <b>đường link</b> (URL)</span>
+          </div>
+          <div style="text-align:center;color:var(--mark);font-size:22px">⬇</div>
+          <div class="ui-card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <span class="ui-btn gray">B</span>
+            <b>Tạo kết nối Google</b> <span class="muted small">→ dán "chìa khoá" vào app để nó mở đúng thư mục Drive</span>
+          </div>
+          <div style="text-align:center;color:var(--mark);font-size:22px">⬇</div>
+          <div class="ui-card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <span class="ui-btn gray">C</span>
+            <b>Cài app ra điện thoại</b> <span class="muted small">→ bấm Kết nối Google + chọn thư mục, xong!</span>
+          </div>
+          <div style="text-align:center;color:var(--ok);font-size:22px">⬇</div>
+          <div class="ui-card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-color:var(--ok)">
+            <span class="ui-btn green">✓</span>
+            <b>Hằng ngày:</b> <span class="muted small">mở biểu tượng app → đã đăng nhập sẵn → ghi số liệu</span>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Làm xong A–B–C một lần. Sau đó mỗi ngày chỉ còn việc cuối (màu xanh).</div>
+    </div>
+
+    <div class="tip">💡 <b>Cần ai giúp không?</b> Phần A và B hơi nhiều bước nhưng chỉ là <b>bấm theo</b>.
+      Nếu kẹt ở đâu, chụp lại màn hình chỗ đó rồi nhờ người rành máy tính xem giúp — bạn vẫn kiểm soát toàn bộ.</div>
+
+    <div class="warn">📋 <b>Chuẩn bị trước:</b> một <b>tài khoản Google (Gmail)</b> của bạn (tài khoản chứa thư mục
+      <code>_coach_data</code>), một máy tính có trình duyệt, và khoảng <b>35 phút</b> ngồi làm một lượt.</div>
+  </section>
+
+  <!-- ================= PHẦN A ================= -->
+  <section id="phanA">
+    <h2 class="part">Phần A · Đưa app lên mạng (GitHub Pages)</h2>
+    <p class="lead">Mục tiêu: biến thư mục <code>pwa</code> trên máy bạn thành một <b>đường link web (HTTPS)</b>
+      mà điện thoại mở được. Ta dùng <b>GitHub Pages</b> vì nó <b>miễn phí</b> và tự có khoá bảo mật (HTTPS).</p>
+
+    <h3 class="step">A1. Tạo tài khoản GitHub (nếu chưa có)</h3>
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">https://github.com/signup</span></div>
+        <div class="screen">
+          <div class="ui-card">
+            <div class="muted small">Email</div>
+            <div class="ui-field filled">tencuaban@gmail.com</div>
+            <div class="muted small" style="margin-top:8px">Mật khẩu · Tên đăng nhập (username)</div>
+            <div class="ui-row"><div class="ui-field filled">hlv-an</div></div>
+            <div class="mark" style="left:18px;bottom:54px">1</div>
+            <div class="ui-row" style="justify-content:flex-end"><span class="ui-btn">Tạo tài khoản</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Vào github.com/signup, điền email + mật khẩu + tên đăng nhập.</div>
+    </div>
+    <ol class="steps">
+      <li>Mở <code>https://github.com/signup</code>, điền email, mật khẩu, và một <b>tên đăng nhập</b>
+        (ví dụ <code>hlv-an</code>). <b>Ghi nhớ tên này</b> — nó nằm trong đường link app sau này.</li>
+      <li>Xác nhận email theo hướng dẫn của GitHub. Xong thì đăng nhập.</li>
+    </ol>
+    <div class="tip">Đã có tài khoản GitHub rồi? Bỏ qua A1, sang thẳng A2.</div>
+
+    <h3 class="step">A2. Tạo "kho chứa" (repository) cho app</h3>
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">https://github.com/new</span></div>
+        <div class="screen">
+          <div class="ui-card">
+            <div class="muted small">Repository name (tên kho)</div>
+            <div class="ui-row"><div class="ui-field filled">coach</div><div class="mark" style="position:static">1</div></div>
+            <div class="ui-row" style="margin-top:10px">
+              <span class="ui-pill">🔘 Public</span><span class="muted small">(để công khai — bắt buộc cho Pages miễn phí)</span>
+              <div class="mark" style="position:static">2</div>
+            </div>
+          </div>
+          <div class="ui-row" style="justify-content:flex-end"><span class="ui-btn green">Create repository</span>
+            <div class="mark" style="position:static">3</div></div>
+        </div>
+      </div>
+      <div class="cap">github.com/new → đặt tên kho (ví dụ "coach") → chọn Public → Create repository.</div>
+    </div>
+    <ol class="steps">
+      <li>Mở <code>https://github.com/new</code>. Ở ô <b>Repository name</b> gõ một tên ngắn, không dấu, ví dụ
+        <code>coach</code>. (Tên này cũng nằm trong link app — nhớ nó.)</li>
+      <li>Chọn <b>Public</b> (công khai). GitHub Pages miễn phí cần kho Public. Yên tâm: chỉ có <i>app</i> công khai,
+        còn <b>dữ liệu khách nằm trong Google Drive của bạn</b>, không nằm ở đây.</li>
+      <li>Bấm <b>Create repository</b>.</li>
+    </ol>
+
+    <h3 class="step">A3. Tải thư mục <code>pwa</code> lên kho</h3>
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">github.com/hlv-an/coach</span></div>
+        <div class="screen">
+          <div class="ui-row"><span class="ui-btn ghost">Add file ▾</span>
+            <div class="ui-menu" style="margin-top:0">
+              <div class="mi">Create new file</div>
+              <div class="mi" style="background:var(--panel2)">Upload files ⬅</div>
+            </div>
+            <div class="mark" style="right:60px;top:24px">1</div>
+          </div>
+          <div class="ui-card" style="border-style:dashed;text-align:center;padding:22px">
+            <div class="muted">Kéo–thả <b>toàn bộ thư mục <code>pwa</code></b> vào đây</div>
+            <div class="small muted" style="margin-top:6px">(hoặc bấm "choose your files")</div>
+            <div class="mark" style="position:static;margin:10px auto 0">2</div>
+          </div>
+          <div class="ui-row" style="justify-content:flex-end"><span class="ui-btn green">Commit changes</span>
+            <div class="mark" style="position:static">3</div></div>
+        </div>
+      </div>
+      <div class="cap">Trong kho: Add file ▾ → Upload files → kéo thả thư mục pwa → Commit changes.</div>
+    </div>
+
+    <div class="warn">🆕 <b>Kho VỪA tạo nên còn trống → CHƯA có nút "Add file".</b> GitHub hiện hộp xanh
+      <b>"Quick setup"</b>. Hãy bấm link chữ xanh <b>"uploading an existing file"</b> trong câu
+      <i>"Get started by creating a new file or uploading an existing file"</i> để mở trang tải lên.
+      Sau lần upload đầu tiên, kho hết trống và nút <b>Add file</b> sẽ xuất hiện ở các lần sau.</div>
+
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">github.com/phucduhong-coach/coach (kho trống)</span></div>
+        <div class="screen">
+          <div class="ui-card" style="background:#0d1b2e;border-color:var(--accent)">
+            <b class="small">Quick setup — if you've done this kind of thing before</b>
+            <div class="ui-row" style="margin-top:8px"><span class="ui-pill">⬇ Set up in Desktop</span>
+              <span class="ui-pill">HTTPS</span><span class="ui-pill">SSH</span></div>
+            <div class="small muted" style="margin-top:10px">Get started by creating a new file or
+              <span style="color:var(--accent2);text-decoration:underline">uploading an existing file</span></div>
+            <div class="mark" style="right:120px;bottom:14px">★</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Kho trống: bấm link "uploading an existing file" (★) trong hộp Quick setup để mở trang tải lên.</div>
+    </div>
+    <ol class="steps">
+      <li><b>Nếu kho còn trống:</b> bấm link <b>"uploading an existing file"</b> trong hộp xanh Quick setup.
+        <b>Nếu kho đã có file:</b> bấm <b>Add file</b> → <b>Upload files</b>.</li>
+      <li>Mở thư mục <code>d:\ANATOMY_LIBRARY\pwa</code> trên máy, <b>kéo–thả cả thư mục <code>pwa</code></b>
+        (gồm <code>index.html</code>, các file <code>.js</code>, thư mục <code>docs</code>…) vào vùng tải lên.
+        Chờ các file hiện đủ.</li>
+      <li>Kéo xuống cuối, bấm nút xanh <b>Commit changes</b> để lưu.</li>
+    </ol>
+    <div class="warn">⚠️ Phải giữ <b>nguyên cấu trúc thư mục</b> (file <code>index.html</code> nằm trong thư mục
+      <code>pwa</code>). Nếu kéo thả lẻ từng file làm mất thư mục <code>pwa</code>, link sẽ khác đi.</div>
+
+    <h3 class="step">A4. Bật GitHub Pages</h3>
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">github.com/hlv-an/coach/settings/pages</span></div>
+        <div class="screen">
+          <div class="ui-row"><span class="ui-tab">Code</span><span class="ui-tab active">Settings</span>
+            <div class="mark" style="left:78px;top:14px">1</div></div>
+          <div class="ui-card">
+            <div class="muted small">Pages → Branch</div>
+            <div class="ui-row">
+              <span class="ui-pill">main</span><span class="muted">/</span><span class="ui-pill">(root)</span>
+              <span class="ui-btn">Save</span>
+              <div class="mark" style="position:static">2</div>
+            </div>
+          </div>
+          <div class="ui-card" style="border-color:var(--ok)">
+            <div class="small">✅ Your site is live at</div>
+            <div class="ui-field filled" style="border-color:var(--ok)">https://hlv-an.github.io/coach/</div>
+            <div class="mark" style="right:18px;bottom:16px">3</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Settings → Pages → Branch = main / (root) → Save. Đợi 1–2 phút, hiện link "site is live".</div>
+    </div>
+    <ol class="steps">
+      <li>Trong kho, bấm tab <b>Settings</b> (trên cùng), rồi cột trái chọn <b>Pages</b>.</li>
+      <li>Mục <b>Branch</b> chọn <code>main</code> và thư mục <code>/(root)</code>, bấm <b>Save</b>.</li>
+      <li>Đợi 1–2 phút, tải lại trang. GitHub hiện dòng <b>"Your site is live at …"</b> kèm một đường link.
+        <b>Copy đường link này</b> — ví dụ <code>https://hlv-an.github.io/coach/</code>.</li>
+    </ol>
+    <div class="ok">✅ <b>Xong Phần A khi:</b> bạn mở được app trên điện thoại bằng đường link dạng
+      <code>https://&lt;tên-của-bạn&gt;.github.io/&lt;tên-kho&gt;/pwa/index.html</code>
+      (ví dụ <code>https://hlv-an.github.io/coach/pwa/index.html</code>).
+      <b>Giữ lại đường link này</b> — Phần B sẽ cần.</div>
+  </section>
+
+  <!-- ================= PHẦN B ================= -->
+  <section id="phanB">
+    <h2 class="part">Phần B · Tạo kết nối Google (làm một lần)</h2>
+    <p class="lead">Mục tiêu: lấy một <b>"chìa khoá" (Client ID)</b> từ Google để app được phép mở <b>đúng thư mục</b>
+      <code>_coach_data</code> trên Drive của bạn — và <b>chỉ thư mục đó</b>. Làm trên máy tính, ở trang
+      <code>console.cloud.google.com</code>.</p>
+
+    <h3 class="step">B1. Tạo "dự án" trên Google Cloud</h3>
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">https://console.cloud.google.com</span></div>
+        <div class="screen">
+          <div class="ui-row">
+            <span class="muted">Google Cloud</span>
+            <span class="ui-pill">Chọn dự án ▾</span>
+            <div class="mark" style="left:120px;top:14px">1</div>
+          </div>
+          <div class="ui-menu" style="margin-left:auto">
+            <div class="ui-row" style="justify-content:space-between;margin:0 0 6px">
+              <b class="small">Chọn dự án</b><span class="ui-btn small">NEW PROJECT</span>
+            </div>
+            <div class="mark" style="right:24px;top:60px">2</div>
+            <div class="mi muted small">(danh sách dự án)</div>
+          </div>
+          <div class="ui-card" style="margin-top:10px">
+            <div class="muted small">Project name</div>
+            <div class="ui-row"><div class="ui-field filled">Ghi Buổi Tập</div>
+              <span class="ui-btn green">CREATE</span><div class="mark" style="position:static">3</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Đăng nhập Google → bấm ô "Chọn dự án" → NEW PROJECT → đặt tên "Ghi Buổi Tập" → CREATE.</div>
+    </div>
+    <ol class="steps">
+      <li>Mở <code>https://console.cloud.google.com</code> và đăng nhập <b>đúng tài khoản Google</b> chứa thư mục
+        <code>_coach_data</code>. Bấm <b>ô chọn dự án</b> trên thanh trên cùng.</li>
+      <li>Bấm <b>NEW PROJECT</b> (Dự án mới).</li>
+      <li>Đặt <b>Project name</b> = <code>Ghi Buổi Tập</code>, bấm <b>CREATE</b>. Đợi vài giây, rồi đảm bảo
+        ô chọn dự án trên cùng đang hiện đúng tên này.</li>
+    </ol>
+
+    <h3 class="step">B2. Bật Google Drive API và Picker API</h3>
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">…/apis/library</span></div>
+        <div class="screen">
+          <div class="ui-row"><span class="ui-btn ghost">☰</span><span class="muted small">APIs &amp; Services › Library</span>
+            <div class="mark" style="left:18px;top:14px">1</div></div>
+          <div class="ui-field filled">🔎 Google Drive API</div>
+          <div class="mark" style="right:18px;top:54px">2</div>
+          <div class="ui-card" style="margin-top:8px">
+            <div class="ui-row" style="justify-content:space-between">
+              <b>Google Drive API</b><span class="ui-btn">ENABLE</span><div class="mark" style="position:static">3</div></div>
+          </div>
+          <div class="ui-card">
+            <div class="ui-row" style="justify-content:space-between">
+              <b>Google Picker API</b><span class="ui-btn">ENABLE</span><div class="mark" style="position:static">4</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Menu ☰ → APIs &amp; Services → Library. Tìm "Google Drive API" → ENABLE. Rồi tìm "Google Picker API" → ENABLE.</div>
+    </div>
+    <ol class="steps">
+      <li>Bấm <b>menu ☰</b> (góc trên trái) → <b>APIs &amp; Services</b> → <b>Library</b>.</li>
+      <li>Gõ tìm <code>Google Drive API</code>.</li>
+      <li>Bấm vào kết quả rồi bấm nút xanh <b>ENABLE</b> (Bật).</li>
+      <li>Quay lại Library, tìm <code>Google Picker API</code> và cũng bấm <b>ENABLE</b>.</li>
+    </ol>
+    <div class="tip">ℹ️ <b>Picker</b> là cửa sổ để bạn <b>bấm chọn đúng thư mục <code>_coach_data</code></b> một lần.
+      Nhờ vậy app chỉ thấy thư mục đó, không thấy phần còn lại của Drive.</div>
+
+    <h3 class="step">B3. Khai báo "màn hình đồng ý" (OAuth consent screen)</h3>
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">…/apis/credentials/consent</span></div>
+        <div class="screen">
+          <div class="ui-row"><span class="ui-pill">🔘 External</span>
+            <span class="muted small">(chọn External — bình thường kể cả khi chỉ mình bạn dùng)</span>
+            <div class="mark" style="position:static">1</div></div>
+          <div class="ui-card">
+            <div class="muted small">App name · User support email · Developer email</div>
+            <div class="ui-field filled">Ghi Buổi Tập</div>
+            <div class="ui-field filled" style="margin-top:6px">tencuaban@gmail.com</div>
+            <div class="mark" style="position:static">2</div>
+          </div>
+          <div class="ui-card">
+            <div class="ui-row"><span class="ui-check"></span><code>.../auth/drive.file</code>
+              <div class="mark" style="position:static">3</div></div>
+            <div class="small muted">Chỉ tích DUY NHẤT scope này. KHÔNG chọn "Drive toàn bộ".</div>
+          </div>
+          <div class="ui-card">
+            <div class="muted small">Test users</div>
+            <div class="ui-row"><div class="ui-field filled">tencuaban@gmail.com</div>
+              <span class="ui-btn small">ADD</span><div class="mark" style="position:static">4</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">OAuth consent screen: External → tên app + email → scope chỉ "drive.file" → thêm email bạn vào Test users.</div>
+    </div>
+    <ol class="steps">
+      <li>Menu ☰ → <b>APIs &amp; Services</b> → <b>OAuth consent screen</b>. Chọn <b>External</b> → <b>CREATE</b>.</li>
+      <li>Điền <b>App name</b> = <code>Ghi Buổi Tập</code>; <b>User support email</b> và <b>Developer contact</b>
+        = email của bạn. Các ô khác bỏ trống cũng được. Bấm <b>SAVE AND CONTINUE</b>.</li>
+      <li>Trang <b>Scopes</b>: bấm <b>ADD OR REMOVE SCOPES</b>, lọc <code>drive.file</code>, tích đúng dòng
+        <code>.../auth/drive.file</code>, bấm <b>UPDATE</b> → <b>SAVE AND CONTINUE</b>.</li>
+      <li>Trang <b>Test users</b>: bấm <b>ADD USERS</b>, nhập <b>email của bạn</b>, <b>ADD</b> → <b>SAVE AND CONTINUE</b>.</li>
+    </ol>
+    <div class="warn">🔑 <b>Vì sao thêm Test user?</b> Để app ở chế độ <b>Testing</b> và có tên bạn trong Test users,
+      bạn <b>dùng được ngay</b>, không phải gửi Google "xét duyệt". Vì chỉ mình bạn dùng, để Testing là đủ.</div>
+
+    <h3 class="step">B4. Tạo "Client ID" (chìa khoá) loại Web</h3>
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">…/apis/credentials</span></div>
+        <div class="screen">
+          <div class="ui-row"><span class="ui-btn">+ CREATE CREDENTIALS ▾</span>
+            <div class="ui-menu"><div class="mi" style="background:var(--panel2)">OAuth client ID ⬅</div>
+              <div class="mi muted">API key</div></div>
+            <div class="mark" style="left:60px;top:18px">1</div></div>
+          <div class="ui-card" style="margin-top:8px">
+            <div class="muted small">Application type</div>
+            <div class="ui-row"><span class="ui-pill">Web application ▾</span><div class="mark" style="position:static">2</div></div>
+
+            <div class="muted small" style="margin-top:10px">Authorized JavaScript origins</div>
+            <div class="ui-field filled">https://hlv-an.github.io</div>
+            <div class="mark" style="position:static">3</div>
+
+            <div class="muted small" style="margin-top:10px">Authorized redirect URIs</div>
+            <div class="ui-field filled">https://hlv-an.github.io/coach/pwa/index.html</div>
+            <div class="mark" style="position:static">4</div>
+          </div>
+          <div class="ui-row" style="justify-content:flex-end"><span class="ui-btn green">CREATE</span>
+            <div class="mark" style="position:static">5</div></div>
+        </div>
+      </div>
+      <div class="cap">Credentials → CREATE CREDENTIALS → OAuth client ID → Web application → điền 2 ô địa chỉ → CREATE.</div>
+    </div>
+    <ol class="steps">
+      <li>Menu ☰ → <b>APIs &amp; Services</b> → <b>Credentials</b>. Bấm <b>+ CREATE CREDENTIALS</b> → <b>OAuth client ID</b>.</li>
+      <li><b>Application type</b> = <b>Web application</b>.</li>
+      <li><b>Authorized JavaScript origins</b> → ADD URI → nhập <b>chỉ phần tên miền</b> của link app, ví dụ
+        <code>https://hlv-an.github.io</code> (không có gì phía sau).</li>
+      <li><b>Authorized redirect URIs</b> → ADD URI → nhập <b>link đầy đủ tới index.html</b>, ví dụ
+        <code>https://hlv-an.github.io/coach/pwa/index.html</code>.</li>
+      <li>Bấm <b>CREATE</b>.</li>
+    </ol>
+    <div class="warn">📌 Hai địa chỉ này phải khớp <b>từng ký tự</b> với link app ở Phần A (kể cả chữ hoa/thường và dấu
+      <code>/</code>). Sai một ký tự là Google báo lỗi khi đăng nhập. Mẹo: mở app trên điện thoại, copy đúng link
+      trên thanh địa chỉ rồi dán vào đây.</div>
+
+    <h3 class="step">B5. Copy "Client ID"</h3>
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">OAuth client created</span></div>
+        <div class="screen">
+          <div class="ui-card" style="border-color:var(--ok)">
+            <div class="small">✅ OAuth client created</div>
+            <div class="muted small" style="margin-top:8px">Your Client ID</div>
+            <div class="ui-row"><div class="ui-field filled">123456789-abcdefg.apps.googleusercontent.com</div>
+              <span class="ui-btn small">📋 Copy</span><div class="mark" style="position:static">1</div></div>
+            <div class="small muted" style="margin-top:10px">Client secret — <b>KHÔNG cần</b>, bỏ qua.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Cửa sổ hiện Client ID dạng "…apps.googleusercontent.com" → bấm Copy. (Không cần client secret.)</div>
+    </div>
+    <ol class="steps">
+      <li>Cửa sổ hiện <b>Client ID</b> (chuỗi <code>…apps.googleusercontent.com</code>). Bấm <b>Copy</b> và giữ lại
+        cho bước B6. <b>Bỏ qua "Client secret"</b> — app này không cần.</li>
+    </ol>
+
+    <h3 class="step">B6. Dán "chìa khoá" vào app</h3>
+    <p class="lead">Mở file <code>d:\ANATOMY_LIBRARY\pwa\drive-client.js</code>. Gần đầu file có khối
+      <code>DRIVE_CONFIG</code>. Điền vào giữa hai dấu nháy <code>'…'</code>:</p>
+    <pre>const DRIVE_CONFIG = {
+  clientId:    '123456789-abcdefg.apps.googleusercontent.com',  // ← dán Client ID (B5)
+  redirectUri: 'https://hlv-an.github.io/coach/pwa/index.html', // ← đúng link redirect (B4)
+  apiKey:      '',   // tuỳ chọn (để '' cũng chạy)
+  appId:       '',   // tuỳ chọn (để '' cũng chạy)
+};</pre>
+    <ol class="steps">
+      <li><b>clientId</b>: dán Client ID đã copy ở B5.</li>
+      <li><b>redirectUri</b>: dán <b>đúng</b> link redirect bạn nhập ở B4.</li>
+      <li>Lưu file. Vì bạn vừa sửa file trong thư mục <code>pwa</code>, hãy <b>tải lại file
+        <code>drive-client.js</code> lên GitHub</b> (làm như A3: Add file → Upload files → chọn đúng file
+        <code>drive-client.js</code> → Commit) để bản trên mạng được cập nhật.</li>
+    </ol>
+    <div class="tip">⚙️ <b>apiKey / appId</b> là tuỳ chọn để cửa sổ chọn thư mục (Picker) chạy mượt hơn. Muốn có:
+      vào <b>Credentials → CREATE CREDENTIALS → API key</b> (lấy <code>apiKey</code>) và xem
+      <b>Project number</b> ở trang chủ Cloud (lấy <code>appId</code>). Chưa có cũng không sao, để trống.</div>
+    <div class="ok">✅ <b>Xong Phần B khi:</b> <code>clientId</code> và <code>redirectUri</code> trong
+      <code>DRIVE_CONFIG</code> đã có giá trị thật và đã được tải lại lên GitHub.</div>
+  </section>
+
+  <!-- ================= PHẦN C ================= -->
+  <section id="phanC">
+    <h2 class="part">Phần C · Kết nối &amp; cài app ra điện thoại</h2>
+    <p class="lead">Giờ làm trên <b>điện thoại</b>: iPhone/iPad mở bằng <b>Safari</b>, Android mở bằng <b>Chrome</b>.</p>
+
+    <h3 class="step">C1. Mở link &amp; bấm "Kết nối Google"</h3>
+    <div class="shot">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div style="text-align:center"><b>📱 Ghi Buổi Tập</b></div>
+          <div class="ui-card" style="text-align:center;margin-top:14px">
+            <div class="muted small">Chưa kết nối</div>
+            <div class="ui-row" style="justify-content:center;margin-top:10px">
+              <span class="ui-btn">Kết nối Google</span></div>
+            <div class="mark" style="position:static;margin:10px auto 0">1</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Mở đường link app (Phần A4) → bấm "Kết nối Google".</div>
+    </div>
+    <ol class="steps">
+      <li>Mở đường link app trên điện thoại (đúng trình duyệt: Safari cho iPhone, Chrome cho Android).
+        Bấm <b>Kết nối Google</b>, chọn đúng tài khoản Google của bạn.</li>
+    </ol>
+
+    <h3 class="step">C2. Qua cảnh báo "chưa xác minh" (bình thường)</h3>
+    <div class="shot">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="ui-card">
+            <div class="small">⚠️ Google chưa xác minh ứng dụng này</div>
+            <div class="ui-row" style="margin-top:8px"><span class="ui-btn ghost">Nâng cao (Advanced)</span>
+              <div class="mark" style="position:static">1</div></div>
+            <div class="ui-row"><span class="muted small">Tiếp tục đến Ghi Buổi Tập (không an toàn)</span>
+              <div class="mark" style="position:static">2</div></div>
+          </div>
+          <div class="ui-card">
+            <div class="small">App muốn xem/quản lý file do app tạo trong Drive</div>
+            <div class="ui-row" style="justify-content:flex-end"><span class="ui-btn green">Cho phép</span>
+              <div class="mark" style="position:static">3</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Nếu thấy "chưa xác minh": Nâng cao → Tiếp tục → Cho phép. Đây là app của bạn nên an toàn.</div>
+    </div>
+    <ol class="steps">
+      <li>Nếu hiện <b>"ứng dụng chưa được xác minh"</b>: bấm <b>Nâng cao (Advanced)</b>.</li>
+      <li>Bấm <b>Tiếp tục đến Ghi Buổi Tập (không an toàn)</b>. Đây là app của riêng bạn, dữ liệu chỉ tới
+        Drive của bạn — yên tâm bấm tiếp.</li>
+      <li>Ở màn hình xin quyền, bấm <b>Cho phép / Tiếp tục</b>.</li>
+    </ol>
+
+    <h3 class="step">C3. Chọn thư mục <code>_coach_data</code> (một lần)</h3>
+    <div class="shot">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="small muted">Chọn thư mục dữ liệu</div>
+          <div class="ui-card"><div class="ui-row"><span>📁</span><b>_coach_data</b>
+            <div class="mark" style="position:static">1</div></div></div>
+          <div class="ui-card"><div class="ui-row muted"><span>📁</span>thư mục khác…</div></div>
+          <div class="ui-row" style="justify-content:flex-end"><span class="ui-btn">Chọn (Select)</span>
+            <div class="mark" style="position:static">2</div></div>
+        </div>
+      </div>
+      <div class="cap">Cửa sổ Google Picker → chọn thư mục "_coach_data" → Chọn. App nhớ luôn, lần sau khỏi chọn lại.</div>
+    </div>
+    <ol class="steps">
+      <li>Cửa sổ chọn thư mục hiện ra → tìm và chọn thư mục <b><code>_coach_data</code></b>.</li>
+      <li>Bấm <b>Chọn / Select</b>. App ghi nhớ thư mục này — <b>lần sau không phải chọn lại</b>.</li>
+    </ol>
+
+    <h3 class="step">C4. Cài app ra màn hình chính</h3>
+    <div class="shot" style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">
+      <div>
+        <div class="phone" style="max-width:240px">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="small muted" style="text-align:center">iPhone / iPad · Safari</div>
+            <div class="ui-row" style="justify-content:center"><span class="ui-btn ghost">⬆️ Chia sẻ</span>
+              <div class="mark" style="position:static">1</div></div>
+            <div class="ui-card"><div class="ui-row">➕ <b>Thêm vào MH chính</b>
+              <div class="mark" style="position:static">2</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="phone" style="max-width:240px">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="small muted" style="text-align:center">Android · Chrome</div>
+            <div class="ui-row" style="justify-content:flex-end"><span class="ui-btn ghost">⋮</span>
+              <div class="mark" style="position:static">1</div></div>
+            <div class="ui-card"><div class="ui-row">➕ <b>Thêm vào màn hình chính</b>
+              <div class="mark" style="position:static">2</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ol class="steps">
+      <li><b>iPhone/iPad:</b> bấm nút <b>Chia sẻ</b> (ô vuông có mũi tên lên) → <b>Thêm vào MH chính</b> → <b>Thêm</b>.
+        <br><b>Android:</b> bấm <b>menu ⋮</b> → <b>Thêm vào màn hình chính / Cài đặt ứng dụng</b>.</li>
+      <li>Mở app <b>từ biểu tượng mới</b> trên màn hình chính (không mở lại bằng trình duyệt) để chạy toàn màn hình.</li>
+    </ol>
+    <div class="ok">✅ <b>Xong hết!</b> Từ giờ chỉ cần bấm biểu tượng app là dùng được.</div>
+  </section>
+
+  <!-- ================= HẰNG NGÀY ================= -->
+  <section id="hangngay">
+    <h2 class="part">▶ Dùng hằng ngày</h2>
+    <ol class="steps">
+      <li><b>Mở biểu tượng "Ghi Buổi"</b> trên màn hình chính — đã đăng nhập sẵn, không phải kết nối lại.</li>
+      <li><b>Đầu ngày khi còn mạng</b> (ở nhà/quán cà phê): app <b>tự tải lịch tuần</b> về máy.</li>
+      <li><b>Ở phòng tập dù mất mạng</b> vẫn <b>ghi số liệu bình thường</b> — lưu ngay trong máy.</li>
+      <li><b>Có mạng lại</b>: app <b>tự đồng bộ</b> nhật ký lên Google Drive, bạn không phải bấm gì.</li>
+    </ol>
+    <div class="tip">Chưa thấy lịch? Mở máy tính → màn lịch → bấm <b>📱 Đưa lịch tuần ra điện thoại</b>,
+      rồi mở lại app trên điện thoại (có mạng) để tải về.</div>
+  </section>
+
+  <!-- ================= SỰ CỐ ================= -->
+  <section id="sucos">
+    <h2 class="part">▶ Xử lý sự cố thường gặp</h2>
+    <div class="card">
+      <ol class="steps">
+        <li><b>App báo hết hạn đăng nhập:</b> bấm <b>Kết nối Google</b> để kết nối lại — dữ liệu đang chờ gửi <b>không mất</b>.</li>
+        <li><b>Đăng nhập báo lỗi "redirect_uri_mismatch":</b> link app không khớp ô đã khai ở B4. Mở app, copy đúng
+          link trên thanh địa chỉ, sửa lại <b>Authorized redirect URIs</b> trong Google Cloud cho khớp từng ký tự.</li>
+        <li><b>Mất mạng ở phòng tập:</b> cứ ghi bình thường; có mạng lại app tự đồng bộ.</li>
+        <li><b>Badge "… đang chờ":</b> bình thường khi mất mạng. Muốn gửi ngay thì bấm <b>đồng bộ thủ công</b>.</li>
+        <li><b>Muốn ngắt kết nối / cho mượn máy:</b> bấm <b>Đăng xuất</b> — app thu hồi quyền Google và xoá dữ liệu khách khỏi máy này.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>
+    Hướng dẫn trực quan · Ứng dụng Ghi Buổi Tập · các hình là bản vẽ mô phỏng màn hình thật.<br>
+    Tài liệu chữ chi tiết: <code>01-tao-google-oauth.md</code> · <code>02-ket-noi-va-cai-app.md</code>
+  </footer>
+
+</div>
+</body>
+</html>

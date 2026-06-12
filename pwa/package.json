@@ -1,0 +1,10 @@
+{
+  "name": "mobile-workout-logger",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ứng_Dụng_Ghi_Buổi (PWA) - ghi số liệu buổi tập thực tế, offline-first, đồng bộ Google Drive.",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  }
+}

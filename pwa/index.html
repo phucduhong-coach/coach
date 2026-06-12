@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <!-- Viewport tối ưu cho cảm ứng/standalone trên di động (YC1.2, 3.1). -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1115" />
+
+  <!-- Hỗ trợ cài ra màn hình chính trên iOS (Safari) — bổ sung cho manifest (YC1.1, 1.2). -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Ghi Buổi" />
+
+  <title>Ghi Buổi Tập</title>
+
+  <!-- Manifest PWA (YC1.1). -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <!-- CSS vỏ ứng dụng + UI ghi set cảm ứng (task 10 dùng chung app.css). -->
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <!--
+    Vỏ tối thiểu + HỢP ĐỒNG DOM với task 10 (xem chú thích đầu app-pwa.js):
+      #connection-status  badge online/offline   (app-pwa quản lý)
+      #mwl-status         badge trạng thái đồng bộ (app-pwa quản lý)
+      #mwl-connect        lời nhắc Kết_Nối_Google  (app-pwa hiện/ẩn theo cổng YC11.5)
+      #mwl-weekinfo       thông tin Gói_Lịch_Tuần  (app-pwa quản lý: giờ tải / thiếu gói)
+      #mwl-sessions       VÙNG render danh sách buổi (TASK 10 toàn quyền render)
+    UI ghi set (ô nhập set, nút ±, "+ set"…) do logger-ui.js (task 10) dựng vào #mwl-sessions.
+  -->
+  <header class="app-header">
+    <h1>Ghi Buổi Tập</h1>
+    <span id="connection-status" class="connection-status" data-state="offline">Đang offline</span>
+    <span id="mwl-status" class="sync-status" data-state="offline">Ngoại tuyến</span>
+  </header>
+
+  <main id="app-root" class="app-root">
+    <!-- Lời nhắc Kết_Nối_Google — hiện khi chưa kết nối; chặn dữ liệu khách (YC11.5). -->
+    <section id="mwl-connect" class="mwl-connect" hidden>
+      <p id="mwl-connect-msg" class="mwl-connect-msg">Hãy kết nối Google để xem lịch và ghi buổi tập.</p>
+      <button id="mwl-connect-btn" type="button" class="mwl-connect-btn">Kết nối Google</button>
+    </section>
+
+    <!-- Thông tin Gói_Lịch_Tuần: thời điểm tải (YC6.4) hoặc hướng dẫn xuất từ laptop (YC6.3). -->
+    <p id="mwl-weekinfo" class="mwl-weekinfo" data-state="loaded"></p>
+
+    <!-- VÙNG DÀNH CHO TASK 10: danh sách buổi + ô nhập set render vào đây. -->
+    <div id="mwl-sessions" class="mwl-sessions" hidden></div>
+  </main>
+
+  <!--
+    THỨ TỰ NẠP SCRIPT (bắt buộc để wiring global hoạt động):
+      1) store.js        → MWLStore   (IndexedDB; các module sau phụ thuộc)
+      2) merge.js        → MWLMerge    ┐
+         backoff.js      → MWLBackoff  ├ hàm thuần, sync.js cần các global này
+         logmodel.js     → (dựng/sửa log thuần)
+      3) drive-client.js → MWLDrive   (cần MWLStore đã có)
+      4) sync.js         → MWLSync     (cần MWLDrive, MWLStore, MWLMerge, MWLBackoff)
+      5) app-pwa.js      → MWLApp      (boot: khôi phục cache, cổng kết nối, trạng thái + auto-sync)
+      6) logger-ui.js    → (task 10)   (render danh sách buổi + ô nhập set vào #mwl-sessions)
+  -->
+  <script src="store.js"></script>
+  <script src="merge.js"></script>
+  <script src="backoff.js"></script>
+  <script src="logmodel.js"></script>
+  <script src="drive-client.js"></script>
+  <script src="sync.js"></script>
+  <script src="app-pwa.js"></script>
+  <!-- UI ghi set cảm ứng — TASK 10 tạo file này; nạp SAU app-pwa.js để dùng MWLApp.onState(). -->
+  <script src="logger-ui.js"></script>
+
+  <!--
+    Google API (Picker) — TUỲ CHỌN: drive-client.js tự nạp động https://apis.google.com/js/api.js
+    khi cần mở Picker, nên không bắt buộc nhúng ở đây. Bỏ comment dòng dưới nếu muốn
+    nạp sẵn để Picker mở nhanh hơn:
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+  -->
+
+  <!-- Đăng ký service worker (mở offline — YC2.1). Đặt ở index.html theo task 9.1. -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function (err) {
+          // Đăng ký SW thất bại không được chặn ứng dụng; chỉ ghi log.
+          console.warn('Đăng ký service worker thất bại:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
