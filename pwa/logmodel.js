@@ -1,5 +1,7 @@
 'use strict';
 
+// (Bọc IIFE: cô lập khai báo top-level để không trùng tên giữa các <script> trong trình duyệt.)
+(function () {
 // Feature: mobile-workout-logger
 // pwa/logmodel.js — Hàm THUẦN dựng/sửa Nhật_Ký_Buổi_Tập (workout-log).
 // Không DOM, không I/O, immutable (không biến đổi đầu vào).
@@ -207,3 +209,5 @@ const api = {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = api;
 }
+
+})();

@@ -1,5 +1,7 @@
 'use strict';
 
+// (Bọc IIFE: cô lập khai báo top-level để không trùng tên giữa các <script> trong trình duyệt.)
+(function () {
 // Feature: mobile-workout-logger
 // Pure (no I/O) exponential-backoff helper for the Bộ_Đồng_Bộ retry logic.
 // Validates: Requirements 8.2 (exponential backoff with a configurable max wait).
@@ -118,3 +120,5 @@ const api = { computeBackoff };
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = api;
 }
+
+})();

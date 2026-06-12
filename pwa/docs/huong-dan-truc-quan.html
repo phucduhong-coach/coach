@@ -193,7 +193,7 @@
             <div class="muted small">Email</div>
             <div class="ui-field filled">tencuaban@gmail.com</div>
             <div class="muted small" style="margin-top:8px">Mật khẩu · Tên đăng nhập (username)</div>
-            <div class="ui-row"><div class="ui-field filled">hlv-an</div></div>
+            <div class="ui-row"><div class="ui-field filled">phucduhong-coach</div></div>
             <div class="mark" style="left:18px;bottom:54px">1</div>
             <div class="ui-row" style="justify-content:flex-end"><span class="ui-btn">Tạo tài khoản</span></div>
           </div>
@@ -203,7 +203,7 @@
     </div>
     <ol class="steps">
       <li>Mở <code>https://github.com/signup</code>, điền email, mật khẩu, và một <b>tên đăng nhập</b>
-        (ví dụ <code>hlv-an</code>). <b>Ghi nhớ tên này</b> — nó nằm trong đường link app sau này.</li>
+        (ví dụ <code>phucduhong-coach</code>). <b>Ghi nhớ tên này</b> — nó nằm trong đường link app sau này.</li>
       <li>Xác nhận email theo hướng dẫn của GitHub. Xong thì đăng nhập.</li>
     </ol>
     <div class="tip">Đã có tài khoản GitHub rồi? Bỏ qua A1, sang thẳng A2.</div>
@@ -240,7 +240,7 @@
     <div class="shot">
       <div class="browser">
         <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-          <span class="url">github.com/hlv-an/coach</span></div>
+          <span class="url">github.com/phucduhong-coach/coach</span></div>
         <div class="screen">
           <div class="ui-row"><span class="ui-btn ghost">Add file ▾</span>
             <div class="ui-menu" style="margin-top:0">
@@ -298,37 +298,50 @@
     <div class="shot">
       <div class="browser">
         <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-          <span class="url">github.com/hlv-an/coach/settings/pages</span></div>
+          <span class="url">github.com/phucduhong-coach/coach/settings/pages</span></div>
         <div class="screen">
-          <div class="ui-row"><span class="ui-tab">Code</span><span class="ui-tab active">Settings</span>
-            <div class="mark" style="left:78px;top:14px">1</div></div>
+          <div class="ui-row"><span class="ui-tab">Code</span><span class="ui-tab">…</span>
+            <span class="ui-tab active">⚙ Settings</span>
+            <div class="mark" style="right:60px;top:14px">1</div></div>
+          <div class="ui-row" style="margin-top:6px">
+            <div class="ui-menu" style="width:150px">
+              <div class="mi muted">General</div>
+              <div class="mi" style="background:var(--panel2)">Pages ⬅</div>
+            </div>
+            <div class="mark" style="left:96px;top:64px">2</div>
+          </div>
           <div class="ui-card">
-            <div class="muted small">Pages → Branch</div>
+            <div class="muted small">Build and deployment → Source</div>
+            <div class="ui-row"><span class="ui-pill">Deploy from a branch ▾</span>
+              <div class="mark" style="position:static">3</div></div>
+            <div class="muted small" style="margin-top:8px">Branch</div>
             <div class="ui-row">
-              <span class="ui-pill">main</span><span class="muted">/</span><span class="ui-pill">(root)</span>
+              <span class="ui-pill">main ▾</span><span class="ui-pill">/ (root) ▾</span>
               <span class="ui-btn">Save</span>
-              <div class="mark" style="position:static">2</div>
+              <div class="mark" style="position:static">4</div>
             </div>
           </div>
           <div class="ui-card" style="border-color:var(--ok)">
             <div class="small">✅ Your site is live at</div>
-            <div class="ui-field filled" style="border-color:var(--ok)">https://hlv-an.github.io/coach/</div>
-            <div class="mark" style="right:18px;bottom:16px">3</div>
+            <div class="ui-field filled" style="border-color:var(--ok)">https://phucduhong-coach.github.io/coach/</div>
+            <div class="mark" style="right:18px;bottom:16px">5</div>
           </div>
         </div>
       </div>
-      <div class="cap">Settings → Pages → Branch = main / (root) → Save. Đợi 1–2 phút, hiện link "site is live".</div>
+      <div class="cap">Settings → Pages → Source = "Deploy from a branch" → Branch = main / (root) → Save. Đợi 1–2 phút.</div>
     </div>
     <ol class="steps">
-      <li>Trong kho, bấm tab <b>Settings</b> (trên cùng), rồi cột trái chọn <b>Pages</b>.</li>
-      <li>Mục <b>Branch</b> chọn <code>main</code> và thư mục <code>/(root)</code>, bấm <b>Save</b>.</li>
-      <li>Đợi 1–2 phút, tải lại trang. GitHub hiện dòng <b>"Your site is live at …"</b> kèm một đường link.
-        <b>Copy đường link này</b> — ví dụ <code>https://hlv-an.github.io/coach/</code>.</li>
+      <li>Trong kho, bấm tab <b>⚙ Settings</b> (hàng tab trên cùng: Code · Issues · … · <b>Settings</b>).</li>
+      <li>Cột bên trái, kéo xuống nhóm "Code and automation", bấm mục <b>Pages</b>.</li>
+      <li>Khu <b>Build and deployment</b> → mục <b>Source</b>: chọn <b>Deploy from a branch</b>.</li>
+      <li>Mục <b>Branch</b>: ô đầu chọn <code>main</code>, ô sau để <code>/ (root)</code>, bấm <b>Save</b>.</li>
+      <li>Đợi <b>1–2 phút</b>, tải lại trang. GitHub hiện dòng <b>"Your site is live at …"</b>.
+        Link gốc của bạn: <code>https://phucduhong-coach.github.io/coach/</code>.</li>
     </ol>
-    <div class="ok">✅ <b>Xong Phần A khi:</b> bạn mở được app trên điện thoại bằng đường link dạng
-      <code>https://&lt;tên-của-bạn&gt;.github.io/&lt;tên-kho&gt;/pwa/index.html</code>
-      (ví dụ <code>https://hlv-an.github.io/coach/pwa/index.html</code>).
-      <b>Giữ lại đường link này</b> — Phần B sẽ cần.</div>
+    <div class="ok">✅ <b>Xong Phần A khi:</b> mở được app bằng link
+      <code>https://phucduhong-coach.github.io/coach/pwa/index.html</code> và thấy màn hình
+      <b>"📱 Ghi Buổi Tập"</b> với nút <b>Kết nối Google</b>.
+      (Bấm Kết nối lúc này sẽ báo lỗi vì chưa làm Phần B — bình thường.) <b>Giữ lại link này.</b></div>
   </section>
 
   <!-- ================= PHẦN B ================= -->
@@ -459,11 +472,11 @@
             <div class="ui-row"><span class="ui-pill">Web application ▾</span><div class="mark" style="position:static">2</div></div>
 
             <div class="muted small" style="margin-top:10px">Authorized JavaScript origins</div>
-            <div class="ui-field filled">https://hlv-an.github.io</div>
+            <div class="ui-field filled">https://phucduhong-coach.github.io</div>
             <div class="mark" style="position:static">3</div>
 
             <div class="muted small" style="margin-top:10px">Authorized redirect URIs</div>
-            <div class="ui-field filled">https://hlv-an.github.io/coach/pwa/index.html</div>
+            <div class="ui-field filled">https://phucduhong-coach.github.io/coach/pwa/index.html</div>
             <div class="mark" style="position:static">4</div>
           </div>
           <div class="ui-row" style="justify-content:flex-end"><span class="ui-btn green">CREATE</span>
@@ -476,9 +489,9 @@
       <li>Menu ☰ → <b>APIs &amp; Services</b> → <b>Credentials</b>. Bấm <b>+ CREATE CREDENTIALS</b> → <b>OAuth client ID</b>.</li>
       <li><b>Application type</b> = <b>Web application</b>.</li>
       <li><b>Authorized JavaScript origins</b> → ADD URI → nhập <b>chỉ phần tên miền</b> của link app, ví dụ
-        <code>https://hlv-an.github.io</code> (không có gì phía sau).</li>
+        <code>https://phucduhong-coach.github.io</code> (không có gì phía sau).</li>
       <li><b>Authorized redirect URIs</b> → ADD URI → nhập <b>link đầy đủ tới index.html</b>, ví dụ
-        <code>https://hlv-an.github.io/coach/pwa/index.html</code>.</li>
+        <code>https://phucduhong-coach.github.io/coach/pwa/index.html</code>.</li>
       <li>Bấm <b>CREATE</b>.</li>
     </ol>
     <div class="warn">📌 Hai địa chỉ này phải khớp <b>từng ký tự</b> với link app ở Phần A (kể cả chữ hoa/thường và dấu
@@ -512,7 +525,7 @@
       <code>DRIVE_CONFIG</code>. Điền vào giữa hai dấu nháy <code>'…'</code>:</p>
     <pre>const DRIVE_CONFIG = {
   clientId:    '123456789-abcdefg.apps.googleusercontent.com',  // ← dán Client ID (B5)
-  redirectUri: 'https://hlv-an.github.io/coach/pwa/index.html', // ← đúng link redirect (B4)
+  redirectUri: 'https://phucduhong-coach.github.io/coach/pwa/index.html', // ← đúng link redirect (B4)
   apiKey:      '',   // tuỳ chọn (để '' cũng chạy)
   appId:       '',   // tuỳ chọn (để '' cũng chạy)
 };</pre>

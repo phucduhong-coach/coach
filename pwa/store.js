@@ -1,5 +1,7 @@
 'use strict';
 
+// (Bọc IIFE: cô lập khai báo top-level để không trùng tên giữa các <script> trong trình duyệt.)
+(function () {
 // Feature: mobile-workout-logger
 // pwa/store.js — Lớp I/O Cache_Offline bằng IndexedDB (chỉ chạy trong trình duyệt).
 // Bọc IndexedDB API thành Promise; không phụ thuộc thư viện ngoài, không bước build.
@@ -441,3 +443,5 @@ const api = {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = api;
 }
+
+})();

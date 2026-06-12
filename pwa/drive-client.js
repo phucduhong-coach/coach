@@ -1,5 +1,7 @@
 'use strict';
 
+// (Bọc IIFE: cô lập khai báo top-level để không trùng tên giữa các <script> trong trình duyệt.)
+(function () {
 // Feature: mobile-workout-logger
 // pwa/drive-client.js — Lớp I/O Google Drive (OAuth + Picker + Drive API).
 // Web/JS thuần, KHÔNG bước build, KHÔNG thư viện ngoài. Chỉ chạy trong trình duyệt
@@ -889,3 +891,5 @@ const api = {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = api;
 }
+
+})();

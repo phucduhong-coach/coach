@@ -1,5 +1,7 @@
 'use strict';
 
+// (Bọc IIFE: cô lập khai báo top-level để không trùng tên giữa các <script> trong trình duyệt.)
+(function () {
 // Feature: mobile-workout-logger
 // Pure conflict-merge helpers for Nhật_Ký_Buổi_Tập (workout-log).
 // No DOM, no I/O. Inputs are never mutated. CommonJS export via module.exports.
@@ -271,3 +273,5 @@ const api = { mergeLogs, hasUnresolvedConflict };
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = api;
 }
+
+})();

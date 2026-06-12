@@ -1,5 +1,7 @@
 'use strict';
 
+// (Bọc IIFE: cô lập khai báo top-level để không trùng tên giữa các <script> trong trình duyệt.)
+(function () {
 // Feature: mobile-workout-logger
 // pwa/sync.js — Bộ_Đồng_Bộ: điều phối đồng bộ hai chiều Nhật_Ký_Buổi_Tập với
 // Google_Drive (đọc-so-gộp-ghi), hàng đợi + thử lại có backoff, poll Gói_Lịch_Tuần.
@@ -526,3 +528,5 @@ const api = {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = api;
 }
+
+})();
