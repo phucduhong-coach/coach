@@ -240,7 +240,8 @@
     }
   }
 
-  // Wire nút "Kết nối Google" → chạy luồng OAuth (redirect). drive-client xử lý PKCE.
+  // Wire nút "Kết nối Google" → đăng nhập GIS, rồi MỞ LUÔN bước chọn thư mục _coach_data,
+  // rồi làm mới app để hiển thị dữ liệu (cùng một thao tác của người dùng).
   function wireConnectButton() {
     const btn = el('mwl-connect-btn');
     const drive = getDrive();
@@ -248,8 +249,15 @@
     if (btn.dataset.wired === '1') return;
     btn.dataset.wired = '1';
     btn.addEventListener('click', function () {
+      setText('mwl-connect-msg', 'Đang kết nối Google…');
       Promise.resolve()
         .then(() => drive.connectGoogle())
+        .then(() => {
+          // Sau khi đăng nhập: mở Google Picker để chọn thư mục _coach_data (lưu folderId).
+          setText('mwl-connect-msg', 'Hãy chọn thư mục _coach_data…');
+          return typeof drive.resolveDataFolder === 'function' ? drive.resolveDataFolder() : null;
+        })
+        .then(() => refresh()) // hydrate lại: đã có auth + folder ⇒ hiển thị danh sách buổi.
         .catch((err) => {
           setText('mwl-connect-msg', 'Kết nối Google thất bại. Vui lòng thử lại.');
           if (g && g.console) g.console.warn('connectGoogle lỗi:', err);

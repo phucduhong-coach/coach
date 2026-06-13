@@ -494,9 +494,9 @@
         <code>https://phucduhong-coach.github.io/coach/pwa/index.html</code>.</li>
       <li>Bấm <b>CREATE</b>.</li>
     </ol>
-    <div class="warn">📌 Hai địa chỉ này phải khớp <b>từng ký tự</b> với link app ở Phần A (kể cả chữ hoa/thường và dấu
-      <code>/</code>). Sai một ký tự là Google báo lỗi khi đăng nhập. Mẹo: mở app trên điện thoại, copy đúng link
-      trên thanh địa chỉ rồi dán vào đây.</div>
+    <div class="warn">📌 Với cách đăng nhập hiện tại (popup), ô <b>quan trọng nhất là "Authorized JavaScript origins"</b>
+      — phải đúng <b>tên miền</b> link app: <code>https://phucduhong-coach.github.io</code> (không có gì phía sau).
+      Ô "Authorized redirect URIs" không bắt buộc cho cách này, nhưng điền vào cũng không sao.</div>
 
     <h3 class="step">B5. Copy "Client ID"</h3>
     <div class="shot">
@@ -520,27 +520,26 @@
         cho bước B6. <b>Bỏ qua "Client secret"</b> — app này không cần.</li>
     </ol>
 
-    <h3 class="step">B6. Dán "chìa khoá" vào app</h3>
-    <p class="lead">Mở file <code>d:\ANATOMY_LIBRARY\pwa\drive-client.js</code>. Gần đầu file có khối
-      <code>DRIVE_CONFIG</code>. Điền vào giữa hai dấu nháy <code>'…'</code>:</p>
+    <h3 class="step">B6. Dán "chìa khoá" vào app <span class="pill-time">đã làm sẵn cho bạn</span></h3>
+    <p class="lead">Client ID được dán vào file <code>pwa/drive-client.js</code>, khối <code>DRIVE_CONFIG</code>.
+      <b>App này không dùng "client secret"</b> (đăng nhập kiểu Google Identity Services cho web — an toàn, không secret).
+      Phần này <b>mình đã điền sẵn</b> cho tài khoản của bạn:</p>
     <pre>const DRIVE_CONFIG = {
-  clientId:    '123456789-abcdefg.apps.googleusercontent.com',  // ← dán Client ID (B5)
-  redirectUri: 'https://phucduhong-coach.github.io/coach/pwa/index.html', // ← đúng link redirect (B4)
-  apiKey:      '',   // tuỳ chọn (để '' cũng chạy)
-  appId:       '',   // tuỳ chọn (để '' cũng chạy)
+  clientId: '73756387461-….apps.googleusercontent.com',  // ← đã điền (Client ID của bạn)
+  redirectUri: 'https://phucduhong-coach.github.io/coach/pwa/index.html', // (không bắt buộc với GIS)
+  apiKey: '',   // tuỳ chọn (cho Picker; để '' vẫn chạy)
+  appId: '73756387461', // Project number (cho Picker)
 };</pre>
     <ol class="steps">
-      <li><b>clientId</b>: dán Client ID đã copy ở B5.</li>
-      <li><b>redirectUri</b>: dán <b>đúng</b> link redirect bạn nhập ở B4.</li>
-      <li>Lưu file. Vì bạn vừa sửa file trong thư mục <code>pwa</code>, hãy <b>tải lại file
-        <code>drive-client.js</code> lên GitHub</b> (làm như A3: Add file → Upload files → chọn đúng file
-        <code>drive-client.js</code> → Commit) để bản trên mạng được cập nhật.</li>
+      <li>Nếu sau này bạn tạo Client ID mới: copy chuỗi <code>…apps.googleusercontent.com</code> dán vào <b>clientId</b>.</li>
+      <li><b>KHÔNG cần client secret.</b> Bỏ qua hoàn toàn.</li>
+      <li>Sửa xong thì <b>tải lại file <code>drive-client.js</code> vào đúng thư mục <code>pwa</code> trên GitHub</b>
+        (vào trong thư mục <code>pwa</code> rồi Add file → Upload files → Commit).</li>
     </ol>
-    <div class="tip">⚙️ <b>apiKey / appId</b> là tuỳ chọn để cửa sổ chọn thư mục (Picker) chạy mượt hơn. Muốn có:
-      vào <b>Credentials → CREATE CREDENTIALS → API key</b> (lấy <code>apiKey</code>) và xem
-      <b>Project number</b> ở trang chủ Cloud (lấy <code>appId</code>). Chưa có cũng không sao, để trống.</div>
-    <div class="ok">✅ <b>Xong Phần B khi:</b> <code>clientId</code> và <code>redirectUri</code> trong
-      <code>DRIVE_CONFIG</code> đã có giá trị thật và đã được tải lại lên GitHub.</div>
+    <div class="tip">⚙️ <b>apiKey</b> (tuỳ chọn) giúp cửa sổ chọn thư mục (Picker) chạy mượt hơn. Nếu Picker không mở,
+      vào <b>Credentials → CREATE CREDENTIALS → API key</b>, copy chuỗi <code>AIza…</code> dán vào <code>apiKey</code> rồi tải lại file.</div>
+    <div class="ok">✅ <b>Xong Phần B khi:</b> <code>clientId</code> đã có trong <code>DRIVE_CONFIG</code> và file
+      <code>drive-client.js</code> đã ở đúng <code>pwa/</code> trên GitHub.</div>
   </section>
 
   <!-- ================= PHẦN C ================= -->
@@ -562,47 +561,51 @@
           </div>
         </div>
       </div>
-      <div class="cap">Mở đường link app (Phần A4) → bấm "Kết nối Google".</div>
+      <div class="cap">Mở đường link app → bấm "Kết nối Google". Một cửa sổ nhỏ (popup) của Google sẽ bật lên.</div>
     </div>
     <ol class="steps">
-      <li>Mở đường link app trên điện thoại (đúng trình duyệt: Safari cho iPhone, Chrome cho Android).
-        Bấm <b>Kết nối Google</b>, chọn đúng tài khoản Google của bạn.</li>
+      <li>Mở đường link app (đúng trình duyệt: Safari cho iPhone, Chrome cho Android; trên máy tính dùng cửa sổ thường).
+        Bấm <b>Kết nối Google</b>. Google mở <b>một cửa sổ nhỏ (popup)</b> — KHÔNG chuyển cả trang đi như trước.</li>
     </ol>
+    <div class="warn">🟡 Nếu popup <b>không hiện</b> (trình duyệt chặn popup): nhìn góc phải thanh địa chỉ có biểu tượng
+      popup bị chặn → bấm <b>Cho phép (Allow)</b> cho trang này → bấm Kết nối Google lại.</div>
 
-    <h3 class="step">C2. Qua cảnh báo "chưa xác minh" (bình thường)</h3>
+    <h3 class="step">C2. Trong popup: chọn tài khoản &amp; đồng ý</h3>
     <div class="shot">
       <div class="phone">
         <div class="notch"></div>
         <div class="screen">
+          <div class="ui-card"><div class="muted small">Chọn tài khoản</div>
+            <div class="ui-row"><span>👤</span><b>tencuaban@gmail.com</b>
+              <div class="mark" style="position:static">1</div></div></div>
           <div class="ui-card">
-            <div class="small">⚠️ Google chưa xác minh ứng dụng này</div>
-            <div class="ui-row" style="margin-top:8px"><span class="ui-btn ghost">Nâng cao (Advanced)</span>
-              <div class="mark" style="position:static">1</div></div>
-            <div class="ui-row"><span class="muted small">Tiếp tục đến Ghi Buổi Tập (không an toàn)</span>
+            <div class="small">⚠️ Google chưa xác minh ứng dụng này (nếu hiện)</div>
+            <div class="ui-row" style="margin-top:6px"><span class="ui-btn ghost">Nâng cao</span>
+              <span class="muted small">→ Tiếp tục đến Ghi Buổi Tập</span>
               <div class="mark" style="position:static">2</div></div>
           </div>
           <div class="ui-card">
             <div class="small">App muốn xem/quản lý file do app tạo trong Drive</div>
-            <div class="ui-row" style="justify-content:flex-end"><span class="ui-btn green">Cho phép</span>
+            <div class="ui-row" style="justify-content:flex-end"><span class="ui-btn green">Tiếp tục / Allow</span>
               <div class="mark" style="position:static">3</div></div>
           </div>
         </div>
       </div>
-      <div class="cap">Nếu thấy "chưa xác minh": Nâng cao → Tiếp tục → Cho phép. Đây là app của bạn nên an toàn.</div>
+      <div class="cap">Trong popup: chọn tài khoản → (nếu có cảnh báo) Nâng cao → Tiếp tục → Allow. Popup tự đóng.</div>
     </div>
     <ol class="steps">
-      <li>Nếu hiện <b>"ứng dụng chưa được xác minh"</b>: bấm <b>Nâng cao (Advanced)</b>.</li>
-      <li>Bấm <b>Tiếp tục đến Ghi Buổi Tập (không an toàn)</b>. Đây là app của riêng bạn, dữ liệu chỉ tới
-        Drive của bạn — yên tâm bấm tiếp.</li>
-      <li>Ở màn hình xin quyền, bấm <b>Cho phép / Tiếp tục</b>.</li>
+      <li>Trong popup, chọn <b>đúng tài khoản Google</b> chứa thư mục <code>_coach_data</code>.</li>
+      <li>Nếu hiện <b>"ứng dụng chưa được xác minh"</b>: bấm <b>Nâng cao</b> → <b>Tiếp tục đến Ghi Buổi Tập</b>.
+        (App của riêng bạn, dữ liệu chỉ tới Drive của bạn — an toàn.)</li>
+      <li>Bấm <b>Tiếp tục / Allow</b> để cho phép. Popup tự đóng lại.</li>
     </ol>
 
-    <h3 class="step">C3. Chọn thư mục <code>_coach_data</code> (một lần)</h3>
+    <h3 class="step">C3. Chọn thư mục <code>_coach_data</code> (tự mở, chọn một lần)</h3>
     <div class="shot">
       <div class="phone">
         <div class="notch"></div>
         <div class="screen">
-          <div class="small muted">Chọn thư mục dữ liệu</div>
+          <div class="small muted">Hãy chọn thư mục _coach_data…</div>
           <div class="ui-card"><div class="ui-row"><span>📁</span><b>_coach_data</b>
             <div class="mark" style="position:static">1</div></div></div>
           <div class="ui-card"><div class="ui-row muted"><span>📁</span>thư mục khác…</div></div>
@@ -610,12 +613,15 @@
             <div class="mark" style="position:static">2</div></div>
         </div>
       </div>
-      <div class="cap">Cửa sổ Google Picker → chọn thư mục "_coach_data" → Chọn. App nhớ luôn, lần sau khỏi chọn lại.</div>
+      <div class="cap">Ngay sau khi đồng ý, app TỰ mở cửa sổ chọn thư mục → chọn "_coach_data" → Select.</div>
     </div>
     <ol class="steps">
-      <li>Cửa sổ chọn thư mục hiện ra → tìm và chọn thư mục <b><code>_coach_data</code></b>.</li>
-      <li>Bấm <b>Chọn / Select</b>. App ghi nhớ thư mục này — <b>lần sau không phải chọn lại</b>.</li>
+      <li>Sau khi popup đóng, app <b>tự mở cửa sổ chọn thư mục</b> (dòng chữ đổi thành "Hãy chọn thư mục _coach_data…").
+        Tìm và chọn thư mục <b><code>_coach_data</code></b>.</li>
+      <li>Bấm <b>Chọn / Select</b>. App ghi nhớ thư mục này — <b>lần sau không phải chọn lại</b>; rồi hiển thị danh sách buổi.</li>
     </ol>
+    <div class="tip">Nếu app báo <b>"Chưa có lịch tuần"</b> dù bạn đã đưa lịch ra từ máy tính — đây là giới hạn quyền của
+      Google, báo người hỗ trợ để nới quyền đọc. Còn nếu chưa từng "Đưa lịch tuần ra điện thoại" thì làm bước đó trước (xem mục Dùng hằng ngày).</div>
 
     <h3 class="step">C4. Cài app ra màn hình chính</h3>
     <div class="shot" style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">
@@ -671,10 +677,14 @@
     <div class="card">
       <ol class="steps">
         <li><b>App báo hết hạn đăng nhập:</b> bấm <b>Kết nối Google</b> để kết nối lại — dữ liệu đang chờ gửi <b>không mất</b>.</li>
-        <li><b>Đăng nhập báo lỗi "redirect_uri_mismatch":</b> link app không khớp ô đã khai ở B4. Mở app, copy đúng
-          link trên thanh địa chỉ, sửa lại <b>Authorized redirect URIs</b> trong Google Cloud cho khớp từng ký tự.</li>
+        <li><b>Bấm "Kết nối Google" không hiện popup:</b> trình duyệt chặn popup → bấm biểu tượng popup ở thanh địa chỉ
+          → <b>Cho phép (Allow)</b> → bấm lại. Hoặc thử <b>cửa sổ ẩn danh</b> với link sạch (không có <code>?code</code>).</li>
+        <li><b>Popup báo lỗi "origin" / không cho đăng nhập:</b> ô <b>Authorized JavaScript origins</b> trong Google Cloud
+          phải đúng <code>https://phucduhong-coach.github.io</code>. Sửa lại cho khớp rồi đợi vài phút.</li>
+        <li><b>Cửa sổ chọn thư mục không mở:</b> có thể cần <b>API key</b> — xem ghi chú ở B6 (tạo API key, dán vào <code>apiKey</code>).</li>
+        <li><b>Báo "Chưa có lịch tuần" dù đã đưa lịch ra:</b> giới hạn quyền đọc của Google với file do máy tính tạo —
+          báo người hỗ trợ để nới quyền.</li>
         <li><b>Mất mạng ở phòng tập:</b> cứ ghi bình thường; có mạng lại app tự đồng bộ.</li>
-        <li><b>Badge "… đang chờ":</b> bình thường khi mất mạng. Muốn gửi ngay thì bấm <b>đồng bộ thủ công</b>.</li>
         <li><b>Muốn ngắt kết nối / cho mượn máy:</b> bấm <b>Đăng xuất</b> — app thu hồi quyền Google và xoá dữ liệu khách khỏi máy này.</li>
       </ol>
     </div>
