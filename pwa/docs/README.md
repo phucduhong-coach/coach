@@ -21,5 +21,7 @@ hoặc mở trên điện thoại). Đây là hướng dẫn **có hình mô ph�
 1. **[01 — Tạo Google OAuth client + màn hình đồng ý](01-tao-google-oauth.md)** — thiết lập Google một lần.
 2. **[02 — Kết nối Google &amp; cài app ra màn hình chính](02-ket-noi-va-cai-app.md)** — kết nối, chọn thư mục
    `_coach_data`, cài app, dùng hằng ngày, đăng xuất, xử lý sự cố.
+3. **[03 — Dùng tính năng "Ghi buổi tập"](03-ghi-buoi-tap.md)** — đẩy lịch tuần, mở app, ghi số liệu thực tế
+   từng set, lưu/đồng bộ tự động, thử offline, xử lý sự cố.
 
 > Gặp khó ở đâu? Chụp lại màn hình chỗ đó rồi nhờ người rành máy tính xem giúp — bạn vẫn kiểm soát toàn bộ.

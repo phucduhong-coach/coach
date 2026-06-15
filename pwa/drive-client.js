@@ -50,8 +50,11 @@ const DRIVE_CONFIG = {
 
 // ---- Hằng số phạm vi & endpoint (KHÔNG đổi) --------------------------------
 
-// Chỉ một phạm vi tối thiểu — không bao giờ xin quyền toàn bộ Drive (YC11.2).
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+// Phạm vi: drive.file (tạo/ghi file của app, vd logs) + drive.readonly (ĐỌC file do
+// máy tính/Drive Desktop tạo, vd week-pack.json). Cần readonly vì app phải đọc lịch
+// tuần do Hệ_Thống_Laptop ghi — drive.file không thấy file do bên khác tạo.
+const DRIVE_SCOPE =
+  'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
 
 const AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
@@ -575,7 +578,31 @@ async function findFileByName(folderId, name) {
   return files.length ? files[0] : null;
 }
 
-// ensureSubfolder(parentId, folderName) → id thư mục con `folderName` trong `parentId`;
+// findFileByNameGlobal(name) → tìm file theo TÊN trên TOÀN Drive (không giới hạn thư mục),
+// chọn bản sửa gần nhất. Dùng làm dự phòng khi file không nằm trong thư mục đã chọn
+// (vd week-pack.json do máy tính ghi vào một _coach_data khác). Cần phạm vi drive.readonly.
+async function findFileByNameGlobal(name) {
+  const q = [
+    `name = '${escapeDriveQueryValue(name)}'`,
+    `mimeType != '${FOLDER_MIME}'`,
+    'trashed = false',
+  ].join(' and ');
+  const params = new URLSearchParams({
+    q,
+    fields: 'files(id,name,modifiedTime)',
+    orderBy: 'modifiedTime desc',
+    pageSize: '5',
+    spaces: 'drive',
+  });
+  const resp = await driveFetch(`${DRIVE_FILES_ENDPOINT}?${params.toString()}`, { method: 'GET' });
+  if (!resp.ok) {
+    // Không chặn luồng nếu tìm toàn cục lỗi — coi như không thấy.
+    return null;
+  }
+  const body = await resp.json();
+  const files = (body && body.files) || [];
+  return files.length ? files[0] : null;
+}
 // tạo mới nếu chưa có. Có cache theo parentId để giảm số lần gọi.
 async function ensureSubfolder(parentId, folderName) {
   const cacheKey = `${parentId}/${folderName}`;
@@ -678,7 +705,10 @@ async function fetchFileContent(fileId) {
 // (YC7.1 đọc dữ liệu khách; YC11.1 HTTPS.)
 async function readJson(name) {
   const { folderId, fileName } = await resolveTargetLocation(name);
-  const file = await findFileByName(folderId, fileName);
+  let file = await findFileByName(folderId, fileName);
+  // Dự phòng: nếu không thấy trong thư mục đã chọn, tìm theo tên trên toàn Drive
+  // (cần drive.readonly) — xử lý trường hợp file do máy tính ghi vào _coach_data khác.
+  if (!file) file = await findFileByNameGlobal(fileName);
   if (!file) return null;
   const data = await fetchFileContent(file.id);
   return { data, modifiedTime: file.modifiedTime };

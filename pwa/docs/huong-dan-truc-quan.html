@@ -131,6 +131,7 @@
     <a class="big" href="#phanA">Phần A · Đưa app lên mạng (GitHub Pages) <span class="pill-time">~15 phút</span></a>
     <a class="big" href="#phanB">Phần B · Tạo kết nối Google (một lần) <span class="pill-time">~15 phút</span></a>
     <a class="big" href="#phanC">Phần C · Kết nối &amp; cài app ra điện thoại <span class="pill-time">~5 phút</span></a>
+    <a class="big" href="#phanD">Phần D · Đưa lịch tuần ra điện thoại (trên laptop)</a>
     <a class="sub" href="#hangngay">▶ Dùng hằng ngày (sau khi xong)</a>
     <a class="sub" href="#sucos">▶ Xử lý sự cố thường gặp</a>
   </nav>
@@ -656,6 +657,74 @@
       <li>Mở app <b>từ biểu tượng mới</b> trên màn hình chính (không mở lại bằng trình duyệt) để chạy toàn màn hình.</li>
     </ol>
     <div class="ok">✅ <b>Xong hết!</b> Từ giờ chỉ cần bấm biểu tượng app là dùng được.</div>
+  </section>
+
+  <!-- ================= PHẦN D ================= -->
+  <section id="phanD">
+    <h2 class="part">Phần D · Đưa lịch tuần ra điện thoại (trên laptop)</h2>
+    <p class="lead">Để điện thoại có lịch buổi tập, mỗi tuần bạn bấm một nút trên laptop để "đẩy" lịch ra.
+      Đây là việc làm <b>thường xuyên</b> (mỗi khi muốn cập nhật lịch cho điện thoại).</p>
+
+    <h3 class="step">D1. Mở viewer trên laptop</h3>
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">cửa sổ đen (console) · http://localhost:8787</span></div>
+        <div class="screen">
+          <div class="ui-card">
+            <div class="ui-row"><span>📁</span> D:\DMM-Automation\…\batch20</div>
+            <div class="ui-row"><span>📄</span> <b>run-open-anatomy-viewer.bat</b> — bấm đúp
+              <div class="mark" style="position:static">1</div></div>
+          </div>
+          <div class="small muted">→ hiện cửa sổ đen, chờ vài giây, trình duyệt tự mở viewer. ĐỪNG đóng cửa sổ đen.</div>
+        </div>
+      </div>
+      <div class="cap">Bấm đúp run-open-anatomy-viewer.bat → viewer tự mở. Giữ cửa sổ đen mở suốt khi dùng.</div>
+    </div>
+    <ol class="steps">
+      <li>Mở thư mục <code>D:\DMM-Automation\exercise_library_automation_v22_mouse_park_batch20</code>.</li>
+      <li><b>Bấm đúp</b> file <b><code>run-open-anatomy-viewer.bat</code></b>. Trình duyệt tự mở viewer
+        (<code>http://localhost:8787</code>). <b>Đừng đóng cửa sổ đen</b> (đóng là tắt server).</li>
+    </ol>
+
+    <h3 class="step">D2. Bấm "Đưa lịch tuần ra điện thoại"</h3>
+    <div class="shot">
+      <div class="browser">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">Viewer · Coach · Nhắc lịch 7 ngày</span></div>
+        <div class="screen">
+          <div class="ui-row">
+            <span class="ui-btn ghost">◀ tuần</span><span class="ui-btn ghost">Tuần này</span>
+            <span class="ui-btn ghost">tuần ▶</span><span class="muted small">12/06 → 18/06</span>
+            <div class="mark" style="position:static">1</div>
+          </div>
+          <div class="ui-row">
+            <span class="ui-btn ghost">📅 Theo ngày</span><span class="ui-btn ghost">⚙ Cài đặt</span>
+            <span class="ui-btn">📱 Đưa lịch tuần ra điện thoại</span>
+            <div class="mark" style="position:static">2</div>
+          </div>
+          <div class="ui-card" style="border-color:var(--ok)">
+            <div class="small">✅ Đã đưa lịch tuần 12/06/2026 · 5 buổi</div>
+            <div class="mark" style="right:18px;bottom:14px">3</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Coach → "Nhắc lịch 7 ngày" → chọn tuần (◀/▶) → bấm "📱 Đưa lịch tuần ra điện thoại" → thấy "… N buổi".</div>
+    </div>
+    <ol class="steps">
+      <li>Trong viewer vào phần <b>Coach → Quản lý khách hàng</b>, tới màn <b>"Nhắc lịch 7 ngày"</b>.
+        Dùng <b>◀ tuần / Tuần này / tuần ▶</b> để chọn đúng tuần cần dạy.</li>
+      <li>Bấm nút <b>📱 Đưa lịch tuần ra điện thoại</b>.</li>
+      <li>Thấy thông báo <b>"Đã đưa lịch tuần … · N buổi"</b>. Cần <b>N &gt; 0</b>; nếu N = 0 thì tuần đó chưa có
+        khách/buổi — chuyển sang tuần khác rồi bấm lại.</li>
+    </ol>
+
+    <h3 class="step">D3. Đợi đồng bộ &amp; xem trên điện thoại</h3>
+    <ol class="steps">
+      <li>Đợi <b>~1 phút</b> để Google Drive Desktop đẩy file lên mạng (xem icon Drive trên laptop báo đã đồng bộ).</li>
+      <li>Trên điện thoại: mở app (có mạng) hoặc <b>tải lại</b> → danh sách buổi của tuần hiện ra, sắp theo giờ.</li>
+    </ol>
+    <div class="ok">✅ Mỗi khi đổi lịch và muốn cập nhật cho điện thoại, chỉ cần làm lại <b>D2</b> (bấm "Đưa lịch tuần ra điện thoại").</div>
   </section>
 
   <!-- ================= HẰNG NGÀY ================= -->
