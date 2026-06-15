@@ -300,7 +300,10 @@
       ])
     );
 
-    return h('div', { class: 'mwl-set-row' + (doneOn ? ' is-done' : '') }, cells);
+    const conflict = !!(loggedSet && loggedSet.conflict);
+    const rowAttrs = { class: 'mwl-set-row' + (doneOn ? ' is-done' : '') + (conflict ? ' has-conflict' : '') };
+    if (conflict) rowAttrs.title = 'Xung đột: số liệu set này được sửa từ 2 nơi. Kiểm tra lại.';
+    return h('div', rowAttrs, cells);
   }
 
   function buildColumnHeader(columns) {
@@ -315,44 +318,96 @@
 
   // Render một bài tập (exercise item).
   function buildItem(session, item, log, opts) {
+    const sessionId = session.sessionId;
+    const entryId = item.itemId;
     const columns = columnsForItem(item);
     const entry = findEntry(log, item.itemId);
     const presc = Array.isArray(item.prescription) ? item.prescription : [];
 
-    const rows = [buildColumnHeader(columns)];
-
     const loggedSets = entry && Array.isArray(entry.sets) ? entry.sets : [];
     const maxLogged = loggedSets.reduce((m, s) => Math.max(m, Number(s && s.set) || 0), 0);
     const total = Math.max(presc.length, maxLogged);
+    const doneCount = loggedSets.filter((s) => s && s.done).length;
+    const allDone = total > 0 && doneCount >= total;
+    const collapsed = _collapsed.has(sessionId + '|' + entryId);
 
+    // Tiêu đề bài — chạm để gập/mở.
+    const headKids = [
+      h('span', { class: 'mwl-item-chevron', text: collapsed ? '▸' : '▾' }),
+      h('span', { class: 'mwl-item-name', text: item.name != null ? item.name : '' }),
+    ];
+    if (isFilled(item.target)) headKids.push(h('span', { class: 'mwl-item-target', text: String(item.target) }));
+    // Chỗ hiển thị "Lần trước" (điền bất đồng bộ qua injectHistory).
+    headKids.push(h('span', { class: 'mwl-prev', 'data-entry-id': entryId, text: '' }));
+    if (allDone) headKids.push(h('span', { class: 'mwl-item-done-badge', text: '✓' }));
+    headKids.push(h('span', { class: 'mwl-item-count', text: doneCount + '/' + total }));
+
+    const head = h(
+      'div',
+      { class: 'mwl-item-head' + (allDone ? ' is-done' : ''), 'data-session-id': sessionId, 'data-entry-id': entryId },
+      headKids
+    );
+
+    const section = h('section', { class: 'mwl-item' + (collapsed ? ' is-collapsed' : ''), 'data-entry-id': entryId }, [head]);
+
+    if (collapsed) return section;
+
+    const rows = [buildColumnHeader(columns)];
     for (let i = 1; i <= total; i++) {
       const prescriptionSet = presc.find((p) => Number(p && p.set) === i) || presc[i - 1] || null;
       const loggedSet = findLoggedSet(entry, i);
       rows.push(buildSetRow(session, item, columns, i, prescriptionSet, loggedSet, opts));
     }
+    section.appendChild(h('div', { class: 'mwl-sets' }, rows));
 
-    // Nút "+ set" (YC3.7).
-    const addBtn = h('button', {
-      type: 'button',
-      class: 'mwl-addset-btn',
-      'data-session-id': session.sessionId,
-      'data-entry-id': item.itemId,
-      text: '+ Thêm set',
-    });
+    // Dòng thống kê: khối lượng buổi + 1RM ước tính (chỉ khi đã có số liệu).
+    const vol = volumeOf(entry);
+    const orm = best1RM(entry);
+    if (vol != null || orm != null) {
+      const stats = [];
+      if (orm != null) stats.push(h('span', { class: 'mwl-stat', text: '1RM ~' + orm + 'kg' }));
+      if (vol != null) stats.push(h('span', { class: 'mwl-stat', text: 'Khối lượng ' + vol + 'kg' }));
+      section.appendChild(h('div', { class: 'mwl-item-stats' }, stats));
+    }
 
-    return h('section', { class: 'mwl-item', 'data-entry-id': item.itemId }, [
-      h('div', { class: 'mwl-item-head' }, [
-        h('span', { class: 'mwl-item-name', text: item.name != null ? item.name : '' }),
-        isFilled(item.target) ? h('span', { class: 'mwl-item-target', text: String(item.target) }) : null,
-      ]),
-      h('div', { class: 'mwl-sets' }, rows),
-      h('div', { class: 'mwl-item-foot' }, [addBtn]),
+    // Ô biểu đồ tiến bộ mini (điền bất đồng bộ qua injectHistory).
+    section.appendChild(h('div', { class: 'mwl-prog', 'data-entry-id': entryId }, []));
+
+    // Mức tạ gợi ý cho máy tính tạ: tạ thực tế cuối, hoặc tạ kê đơn đầu.
+    const last = lastLoggedSet(entry);
+    let prefillW = last && isFilled(last.weight) ? last.weight : '';
+    if (prefillW === '' && presc.length && isFilled(presc[0].weight)) prefillW = presc[0].weight;
+
+    const foot = h('div', { class: 'mwl-item-foot' }, [
+      h('button', {
+        type: 'button',
+        class: 'mwl-copy-btn',
+        'data-session-id': sessionId,
+        'data-entry-id': entryId,
+        text: '📋 Chép kê đơn',
+      }),
+      h('button', {
+        type: 'button',
+        class: 'mwl-addset-btn',
+        'data-session-id': sessionId,
+        'data-entry-id': entryId,
+        text: '+ Thêm set',
+      }),
+      h('button', {
+        type: 'button',
+        class: 'mwl-plate-btn',
+        'data-weight': prefillW !== '' ? String(prefillW) : null,
+        text: '🏋️ Tạ',
+      }),
     ]);
+    section.appendChild(foot);
+    return section;
   }
 
   // Render một buổi (session card).
   function buildSession(session, log, opts) {
     const items = Array.isArray(session.items) ? session.items : [];
+    const sessionId = session.sessionId;
     const meta = [];
     if (isFilled(session.time)) meta.push(h('span', { class: 'mwl-session-time', text: String(session.time) }));
     if (isFilled(session.planName)) meta.push(h('span', { class: 'mwl-session-plan', text: String(session.planName) }));
@@ -371,12 +426,80 @@
       h('div', { class: 'mwl-session-meta' }, meta),
     ]);
 
-    const body =
-      items.length > 0
-        ? h('div', { class: 'mwl-session-items' }, items.map((it) => buildItem(session, it, log, opts)))
-        : h('p', { class: 'mwl-empty-hint', text: 'Buổi này chưa có bài tập.' });
+    // Thanh tiến độ buổi.
+    const p = computeProgress(session, log);
+    const pct = p.totalSets > 0 ? Math.round((p.doneSets / p.totalSets) * 100) : 0;
+    const progress = h('div', { class: 'mwl-progress', 'data-session-id': sessionId }, [
+      h('div', { class: 'mwl-progress-track' }, [
+        h('div', { class: 'mwl-progress-fill', style: 'width:' + pct + '%' }),
+      ]),
+      h('div', {
+        class: 'mwl-progress-text',
+        text: p.doneItems + '/' + p.totalItems + ' bài · ' + p.doneSets + '/' + p.totalSets + ' set',
+      }),
+    ]);
 
-    return h('article', { class: 'mwl-session', 'data-session-id': session.sessionId }, [head, body]);
+    // Hàng cân nặng + ghi chú buổi.
+    const bwInput = h('input', {
+      class: 'mwl-bw-input',
+      type: 'text',
+      inputmode: 'decimal',
+      'data-session-id': sessionId,
+      placeholder: 'kg',
+    });
+    if (isFilled(log && log.bodyweight)) bwInput.value = String(log.bodyweight);
+    const noteInput = h('textarea', {
+      class: 'mwl-note-input',
+      'data-session-id': sessionId,
+      rows: '1',
+      placeholder: 'Ghi chú buổi (vd: khách hơi mệt, giảm tạ vai)…',
+    });
+    if (isFilled(log && log.note)) noteInput.value = String(log.note);
+    const metaRow = h('div', { class: 'mwl-session-extra' }, [
+      h('label', { class: 'mwl-bw-wrap' }, [h('span', { class: 'mwl-bw-label', text: 'Cân nặng' }), bwInput]),
+      noteInput,
+    ]);
+
+    // Gộp bài theo giáo án + bài tự do.
+    const allItems = getAllItems(session, log);
+
+    let body;
+    if (_focus && allItems.length > 0) {
+      let idx = _focusIdx;
+      if (!(idx >= 0 && idx < allItems.length)) idx = 0;
+      _focusIdx = idx;
+      const navAttrsPrev = { type: 'button', class: 'mwl-focus-prev', 'data-session-id': sessionId, text: '◀' };
+      const navAttrsNext = { type: 'button', class: 'mwl-focus-next', 'data-session-id': sessionId, text: '▶' };
+      if (idx <= 0) navAttrsPrev.disabled = 'disabled';
+      if (idx >= allItems.length - 1) navAttrsNext.disabled = 'disabled';
+      const nav = h('div', { class: 'mwl-focus-nav' }, [
+        h('button', navAttrsPrev),
+        h('span', { class: 'mwl-focus-label', text: 'Bài ' + (idx + 1) + '/' + allItems.length }),
+        h('button', navAttrsNext),
+      ]);
+      body = h('div', { class: 'mwl-session-items' }, [nav, buildItem(session, allItems[idx], log, opts)]);
+    } else if (allItems.length > 0) {
+      body = h('div', { class: 'mwl-session-items' }, allItems.map((it) => buildItem(session, it, log, opts)));
+    } else {
+      body = h('p', { class: 'mwl-empty-hint', text: 'Buổi này chưa có bài tập.' });
+    }
+
+    const foot = h('div', { class: 'mwl-session-foot' }, [
+      h('button', {
+        type: 'button',
+        class: 'mwl-addex-btn',
+        'data-session-id': sessionId,
+        text: '➕ Thêm bài tập',
+      }),
+      h('button', {
+        type: 'button',
+        class: 'mwl-end-btn',
+        'data-session-id': sessionId,
+        text: '✅ Kết thúc buổi',
+      }),
+    ]);
+
+    return h('article', { class: 'mwl-session', 'data-session-id': sessionId }, [head, progress, metaRow, body, foot]);
   }
 
   // ========================================================================
@@ -477,6 +600,164 @@
     return next;
   }
 
+  // --- Phụ trợ tính năng nâng cao (TASK 11) --------------------------------
+
+  // Trạng thái gập bài (UI-only), khoá theo "sessionId|entryId".
+  const _collapsed = new Set();
+
+  // Chế độ "tập trung 1 bài" (mục 8).
+  let _focus = false;
+  let _focusIdx = 0;
+
+  function vibrate(pattern) {
+    try {
+      if (g && g.navigator && typeof g.navigator.vibrate === 'function') g.navigator.vibrate(pattern);
+    } catch (_) {
+      /* best-effort */
+    }
+  }
+
+  function prescriptionSetOf(item, ordinal) {
+    const presc = item && Array.isArray(item.prescription) ? item.prescription : [];
+    return presc.find((p) => Number(p && p.set) === Number(ordinal)) || presc[ordinal - 1] || null;
+  }
+
+  function lastLoggedSet(entry) {
+    const sets = entry && Array.isArray(entry.sets) ? entry.sets : [];
+    let best = null;
+    for (const s of sets) {
+      if (!s) continue;
+      if (!best || Number(s.set) > Number(best.set)) best = s;
+    }
+    return best;
+  }
+
+  function numOrNull(v) {
+    if (v === '' || v == null) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  // Khối lượng (volume) = Σ weight×reps các set có đủ số liệu.
+  function volumeOf(entry) {
+    const sets = entry && Array.isArray(entry.sets) ? entry.sets : [];
+    let vol = 0;
+    let any = false;
+    for (const s of sets) {
+      const w = numOrNull(s && s.weight);
+      const r = numOrNull(s && s.reps);
+      if (w != null && r != null) {
+        vol += w * r;
+        any = true;
+      }
+    }
+    return any ? Math.round(vol * 10) / 10 : null;
+  }
+
+  // 1RM ước tính tốt nhất (Epley) trong các set của entry.
+  function best1RM(entry) {
+    const hist = g && g.MWLHistory;
+    const sets = entry && Array.isArray(entry.sets) ? entry.sets : [];
+    let best = null;
+    for (const s of sets) {
+      const w = numOrNull(s && s.weight);
+      const r = numOrNull(s && s.reps);
+      if (w == null) continue;
+      let est;
+      if (hist && typeof hist.epley1RM === 'function') est = hist.epley1RM(w, r);
+      else est = r != null && r > 1 ? Math.round(w * (1 + r / 30) * 10) / 10 : w;
+      if (est != null && (best == null || est > best)) best = est;
+    }
+    return best;
+  }
+
+  // Lưu meta buổi (note/bodyweight) immutably qua logmodel.setLogMeta + persist.
+  async function commitMeta(sessionId, patch) {
+    const model = _ctx && _ctx.deps.logModel;
+    if (!model || typeof model.setLogMeta !== 'function') return;
+    pushUndo(sessionId);
+    const log = getCtxLog(sessionId);
+    const next = model.setLogMeta(log, patch, nowIso());
+    _ctx.logs.set(sessionId, next);
+    await persistAndQueue(next, sessionId);
+  }
+
+  // Gộp bài giáo án + bài tự do (entry trong log không thuộc giáo án).
+  function getAllItems(session, log) {
+    const items = session && Array.isArray(session.items) ? session.items : [];
+    const plannedIds = {};
+    items.forEach((it) => {
+      if (it && it.itemId != null) plannedIds[it.itemId] = true;
+    });
+    const customItems = (log && Array.isArray(log.entries) ? log.entries : [])
+      .filter((e) => e && e.entryId != null && !plannedIds[e.entryId])
+      .map((e) => ({
+        itemId: e.entryId,
+        name: e.name || 'Bài thêm',
+        type: 'exercise',
+        target: 'tự do',
+        cols: {},
+        prescription: [],
+      }));
+    return items.concat(customItems);
+  }
+
+  // Chỉ số bài CHƯA hoàn thành đầu tiên (cho chế độ tập trung).
+  function firstUnfinishedIndex(session, log) {
+    const all = getAllItems(session, log);
+    for (let i = 0; i < all.length; i++) {
+      const entry = findEntry(log, all[i].itemId);
+      const presc = Array.isArray(all[i].prescription) ? all[i].prescription : [];
+      const logged = entry && Array.isArray(entry.sets) ? entry.sets : [];
+      const maxLogged = logged.reduce((m, s) => Math.max(m, Number(s && s.set) || 0), 0);
+      const total = Math.max(presc.length, maxLogged);
+      const dCount = logged.filter((s) => s && s.done).length;
+      if (!(total > 0 && dCount >= total)) return i;
+    }
+    return 0;
+  }
+
+  // Tính tiến độ buổi: tổng set hiển thị, số set xong, số bài xong.
+  function computeProgress(session, log) {
+    const items = session && Array.isArray(session.items) ? session.items : [];
+    let totalSets = 0;
+    let doneSets = 0;
+    let doneItems = 0;
+    for (const item of items) {
+      const entry = findEntry(log, item.itemId);
+      const presc = Array.isArray(item.prescription) ? item.prescription : [];
+      const logged = entry && Array.isArray(entry.sets) ? entry.sets : [];
+      const maxLogged = logged.reduce((m, s) => Math.max(m, Number(s && s.set) || 0), 0);
+      const total = Math.max(presc.length, maxLogged);
+      const dCount = logged.filter((s) => s && s.done).length;
+      totalSets += total;
+      doneSets += dCount;
+      if (total > 0 && dCount >= total) doneItems += 1;
+    }
+    return { totalSets, doneSets, doneItems, totalItems: items.length };
+  }
+
+  // Cập nhật thanh tiến độ tại chỗ sau mỗi thay đổi.
+  function updateProgress(sessionId) {
+    if (!_ctx || !_ctx.container || !_ctx.container.querySelector) return;
+    const session = findSession(sessionId);
+    if (!session) return;
+    const log = getCtxLog(sessionId);
+    const p = computeProgress(session, log);
+    const wrap = _ctx.container.querySelector('.mwl-progress[data-session-id="' + cssEscape(sessionId) + '"]');
+    if (!wrap) return;
+    const fill = wrap.querySelector('.mwl-progress-fill');
+    const txt = wrap.querySelector('.mwl-progress-text');
+    const pct = p.totalSets > 0 ? Math.round((p.doneSets / p.totalSets) * 100) : 0;
+    if (fill) fill.style.width = pct + '%';
+    if (txt) txt.textContent = p.doneItems + '/' + p.totalItems + ' bài · ' + p.doneSets + '/' + p.totalSets + ' set';
+  }
+
+  // Escape giá trị để dùng trong selector (đơn giản, đủ cho id của chúng ta).
+  function cssEscape(s) {
+    return String(s).replace(/["\\]/g, '\\$&');
+  }
+
   // --- Handlers ------------------------------------------------------------
 
   async function onInputChange(input) {
@@ -485,6 +766,7 @@
     const ordinal = Number(input.getAttribute('data-set'));
     const field = input.getAttribute('data-field');
     const value = normalizeFieldValue(field, input.value);
+    pushUndo(sessionId);
     await commitPatch(sessionId, entryId, { set: ordinal, [field]: value });
   }
 
@@ -501,6 +783,8 @@
     const current = input ? input.value : '';
     const nextVal = applyStep(current, step, dir);
     if (input) input.value = String(nextVal); // cập nhật DOM tại chỗ
+    vibrate(8);
+    pushUndo(sessionId);
     await commitPatch(sessionId, entryId, { set: ordinal, [field]: nextVal });
   }
 
@@ -513,6 +797,7 @@
     const existing = findLoggedSet(findEntry(log, entryId), ordinal);
     const newDone = !(existing && existing.done);
 
+    pushUndo(sessionId);
     await commitPatch(sessionId, entryId, { set: ordinal, done: newDone });
 
     // Cập nhật DOM tại chỗ (YC3.4 — phản hồi tức thì một-chạm).
@@ -521,6 +806,17 @@
     btn.setAttribute('aria-pressed', newDone ? 'true' : 'false');
     const row = btn.closest ? btn.closest('.mwl-set-row') : null;
     if (row) row.classList.toggle('is-done', newDone);
+
+    // Rung phản hồi + đồng hồ nghỉ tự động theo "Nghỉ" kê đơn (chỉ khi đánh dấu XONG).
+    vibrate(newDone ? [15, 30, 15] : 10);
+    if (newDone && g && g.MWLRestTimer && typeof g.MWLRestTimer.start === 'function') {
+      const session = findSession(sessionId);
+      const item = session ? findItem(session, entryId) : null;
+      const ps = item ? prescriptionSetOf(item, ordinal) : null;
+      const secs = g.MWLRestTimer.parseRest(ps ? ps.rest : '');
+      if (secs) g.MWLRestTimer.start(secs, 'Nghỉ');
+    }
+    updateProgress(sessionId);
   }
 
   async function onAddSet(btn) {
@@ -528,13 +824,275 @@
     const entryId = btn.getAttribute('data-entry-id');
 
     const model = _ctx && _ctx.deps.logModel;
-    if (!model || typeof model.addBlankSet !== 'function') return;
+    if (!model) return;
+    pushUndo(sessionId);
     const log = getCtxLog(sessionId);
-    const next = model.addBlankSet(log, entryId, nowIso());
-    _ctx.logs.set(sessionId, next);
-    await persistAndQueue(next, sessionId);
+    const entry = findEntry(log, entryId);
+    const last = lastLoggedSet(entry);
 
+    // Mang mức tạ/reps của set trước xuống set mới cho đỡ gõ (YC nâng cao).
+    if (last && (isFilled(last.weight) || isFilled(last.reps))) {
+      const nextOrd = (Number(last.set) || 0) + 1;
+      await commitPatch(sessionId, entryId, { set: nextOrd, weight: last.weight, reps: last.reps });
+    } else if (typeof model.addBlankSet === 'function') {
+      const next = model.addBlankSet(log, entryId, nowIso());
+      _ctx.logs.set(sessionId, next);
+      await persistAndQueue(next, sessionId);
+    }
+
+    vibrate(10);
     rerenderItem(sessionId, entryId); // vẽ lại bài để hiện set mới
+    updateProgress(sessionId);
+  }
+
+  // Chép kê đơn xuống thực tế cho cả bài (1 chạm) — chỉ điền set CHƯA có thực tế.
+  async function onCopyPrescription(btn) {
+    const sessionId = btn.getAttribute('data-session-id');
+    const entryId = btn.getAttribute('data-entry-id');
+    const session = findSession(sessionId);
+    const item = session ? findItem(session, entryId) : null;
+    if (!item) return;
+    const presc = Array.isArray(item.prescription) ? item.prescription : [];
+    const COPY_FIELDS = ['reps', 'weight', 'one_rm', 'rpe', 'rir', 'rest', 'time', 'distance', 'tempo'];
+    pushUndo(sessionId);
+    for (const p of presc) {
+      if (!p) continue;
+      const ordinal = Number(p.set) || presc.indexOf(p) + 1;
+      const existing = findLoggedSet(findEntry(getCtxLog(sessionId), entryId), ordinal);
+      if (existing && (isFilled(existing.reps) || isFilled(existing.weight))) continue; // đã ghi ⇒ giữ
+      const patch = { set: ordinal };
+      let any = false;
+      for (const f of COPY_FIELDS) {
+        if (isFilled(p[f])) {
+          patch[f] = p[f];
+          any = true;
+        }
+      }
+      if (any) {
+        // eslint-disable-next-line no-await-in-loop
+        await commitPatch(sessionId, entryId, patch);
+      }
+    }
+    vibrate(12);
+    rerenderItem(sessionId, entryId);
+    updateProgress(sessionId);
+  }
+
+  // Bật/tắt chế độ tập trung 1 bài (mục 8).
+  function onToggleFocus() {
+    _focus = !_focus;
+    if (_focus) {
+      const session = findSession(_nav.sessionId);
+      const log = session ? getCtxLog(session.sessionId) : null;
+      _focusIdx = session ? firstUnfinishedIndex(session, log) : 0;
+    }
+    rerenderAll();
+  }
+
+  function onFocusNav(dir) {
+    const session = findSession(_nav.sessionId);
+    const log = session ? getCtxLog(session.sessionId) : null;
+    const all = getAllItems(session, log);
+    let idx = _focusIdx + dir;
+    if (idx < 0) idx = 0;
+    if (idx > all.length - 1) idx = all.length - 1;
+    _focusIdx = idx;
+    rerenderAll();
+  }
+
+  // Gập/mở một bài.
+  function onToggleCollapse(headEl) {
+    const sessionId = headEl.getAttribute('data-session-id');
+    const entryId = headEl.getAttribute('data-entry-id');
+    if (!entryId) return;
+    const key = sessionId + '|' + entryId;
+    if (_collapsed.has(key)) _collapsed.delete(key);
+    else _collapsed.add(key);
+    rerenderItem(sessionId, entryId);
+  }
+
+  // Mở máy tính bánh tạ (prefill từ ô tạ gần nhất nếu có).
+  function onPlateCalc(btn) {
+    if (!(g && g.MWLPlateCalc && typeof g.MWLPlateCalc.open === 'function')) return;
+    let prefill = btn.getAttribute('data-weight') || '';
+    g.MWLPlateCalc.open(prefill);
+  }
+
+  // Kết thúc buổi: đồng bộ ngay + hiện tóm tắt.
+  async function onEndSession(btn) {
+    const sessionId = btn.getAttribute('data-session-id');
+    const session = findSession(sessionId);
+    const log = getCtxLog(sessionId);
+    const p = session ? computeProgress(session, log) : { doneSets: 0, totalSets: 0, doneItems: 0, totalItems: 0 };
+    setSaveState('saving');
+    const sync = (_ctx && _ctx.deps && _ctx.deps.sync) || (g && g.MWLSync) || null;
+    try {
+      if (sync && typeof sync.manualSync === 'function') await sync.manualSync();
+      setSaveState('pending', sync && typeof sync.syncStatus === 'function' ? await sync.syncStatus() : null);
+    } catch (e) {
+      reportErr(e);
+      setSaveState('error');
+    }
+    vibrate([20, 60, 20]);
+    showSummary(session, p);
+  }
+
+  function showSummary(session, p) {
+    const d = doc();
+    if (!d) return;
+    const modal = h('div', { class: 'mwl-summary-modal' }, [
+      h('div', { class: 'mwl-summary-card' }, [
+        h('div', { class: 'mwl-summary-head', text: '✅ Hoàn tất buổi tập' }),
+        h('div', { class: 'mwl-summary-client', text: (session && session.clientName) || '' }),
+        h('div', { class: 'mwl-summary-stats' }, [
+          h('div', { class: 'mwl-summary-stat' }, [
+            h('span', { class: 'mwl-summary-num', text: String(p.doneItems) + '/' + String(p.totalItems) }),
+            h('span', { class: 'mwl-summary-lbl', text: 'bài xong' }),
+          ]),
+          h('div', { class: 'mwl-summary-stat' }, [
+            h('span', { class: 'mwl-summary-num', text: String(p.doneSets) + '/' + String(p.totalSets) }),
+            h('span', { class: 'mwl-summary-lbl', text: 'set xong' }),
+          ]),
+        ]),
+        h('div', { class: 'mwl-summary-actions' }, [
+          h('button', { type: 'button', class: 'mwl-summary-share', text: '📤 Chia sẻ' }),
+          h('button', { type: 'button', class: 'mwl-summary-close', text: 'Đóng' }),
+        ]),
+      ]),
+    ]);
+    modal.addEventListener('click', function (ev) {
+      if (ev.target === modal || (ev.target && ev.target.classList && ev.target.classList.contains('mwl-summary-close'))) {
+        if (modal.parentNode) modal.parentNode.removeChild(modal);
+      }
+      if (ev.target && ev.target.classList && ev.target.classList.contains('mwl-summary-share')) {
+        shareSummary(session, p);
+      }
+    });
+    (d.body || d.documentElement).appendChild(modal);
+  }
+
+  // --- Chia sẻ tóm tắt buổi (mục 10): vẽ ảnh PNG rồi share/tải về ----------
+  function shareSummary(session, p) {
+    const d = doc();
+    if (!d) return;
+    try {
+      const canvas = d.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 460;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 800, 460);
+      ctx.fillStyle = '#173a78';
+      ctx.fillRect(0, 0, 800, 120);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 40px Arial, sans-serif';
+      ctx.fillText('Báo cáo buổi tập', 40, 76);
+      ctx.fillStyle = '#17202c';
+      ctx.font = 'bold 32px Arial, sans-serif';
+      ctx.fillText(String(session && session.clientName ? session.clientName : ''), 40, 185);
+      ctx.fillStyle = '#667085';
+      ctx.font = '22px Arial, sans-serif';
+      const sub = [session && session.workoutName, session && session.date].filter(Boolean).join('  ·  ');
+      ctx.fillText(sub, 40, 225);
+      // hai chỉ số lớn
+      ctx.fillStyle = '#173a78';
+      ctx.font = 'bold 72px Arial, sans-serif';
+      ctx.fillText(p.doneItems + '/' + p.totalItems, 120, 360);
+      ctx.fillText(p.doneSets + '/' + p.totalSets, 470, 360);
+      ctx.fillStyle = '#667085';
+      ctx.font = '22px Arial, sans-serif';
+      ctx.fillText('bài tập', 150, 400);
+      ctx.fillText('set', 540, 400);
+      ctx.fillStyle = '#9aa3b2';
+      ctx.font = '18px Arial, sans-serif';
+      ctx.fillText('Tạo bởi Ghi Buổi Tập', 40, 440);
+
+      const finish = (blob) => {
+        const file = blob && g.File ? new g.File([blob], 'bao-cao-buoi-tap.png', { type: 'image/png' }) : null;
+        const nav = g.navigator;
+        if (file && nav && typeof nav.canShare === 'function' && nav.canShare({ files: [file] }) && typeof nav.share === 'function') {
+          nav.share({ files: [file], title: 'Báo cáo buổi tập', text: 'Tóm tắt buổi tập' }).catch(() => {});
+          return;
+        }
+        // Dự phòng: tải ảnh về máy.
+        const url = canvas.toDataURL('image/png');
+        const a = d.createElement('a');
+        a.href = url;
+        a.download = 'bao-cao-buoi-tap.png';
+        (d.body || d.documentElement).appendChild(a);
+        a.click();
+        if (a.parentNode) a.parentNode.removeChild(a);
+      };
+
+      if (canvas.toBlob) canvas.toBlob(finish, 'image/png');
+      else finish(null);
+    } catch (e) {
+      reportErr(e);
+    }
+  }
+
+  // --- Hoàn tác (mục 9): ngăn xếp ảnh chụp log trước mỗi thay đổi ----------
+  const _undo = [];
+
+  function pushUndo(sessionId) {
+    if (!_ctx) return;
+    const log = getCtxLog(sessionId);
+    if (!log) return;
+    try {
+      _undo.push({ sessionId, log: JSON.parse(JSON.stringify(log)) });
+    } catch (_) {
+      return;
+    }
+    if (_undo.length > 30) _undo.shift();
+    updateUndoBtn();
+  }
+
+  async function undoLast() {
+    const item = _undo.pop();
+    if (!item || !_ctx) return;
+    _ctx.logs.set(item.sessionId, item.log);
+    await persistAndQueue(item.log, item.sessionId);
+    vibrate(10);
+    updateUndoBtn();
+    rerenderAll();
+  }
+
+  function updateUndoBtn() {
+    if (!_ctx || !_ctx.container || !_ctx.container.querySelector) return;
+    const btn = _ctx.container.querySelector('.mwl-undo-btn');
+    if (btn) btn.disabled = _undo.length === 0;
+  }
+
+  // --- Thêm bài tập tự do (mục 6) -----------------------------------------
+  async function onAddExercise(btn) {
+    const sessionId = btn.getAttribute('data-session-id');
+    const model = _ctx && _ctx.deps.logModel;
+    if (!model || typeof model.ensureEntry !== 'function') return;
+    const name = g && typeof g.prompt === 'function' ? g.prompt('Tên bài tập thêm vào buổi:') : '';
+    if (!name || !String(name).trim()) return;
+    pushUndo(sessionId);
+    const entryId = 'custom:' + Date.now();
+    let log = getCtxLog(sessionId);
+    log = model.ensureEntry(log, entryId, String(name).trim(), nowIso());
+    if (typeof model.addBlankSet === 'function') log = model.addBlankSet(log, entryId, nowIso());
+    _ctx.logs.set(sessionId, log);
+    await persistAndQueue(log, sessionId);
+    vibrate(12);
+    rerenderAll();
+  }
+
+  // --- Lọc khách theo ô tìm kiếm (mục 7) ----------------------------------
+  function onClientSearch(input) {
+    const q = String(input.value || '').trim().toLowerCase();
+    const toolbar = input.closest ? input.closest('.mwl-toolbar') : null;
+    if (!toolbar) return;
+    const chips = toolbar.getElementsByClassName('mwl-chip');
+    Array.prototype.slice.call(chips).forEach((c) => {
+      if (c.getAttribute('data-nav') !== 'client') return;
+      const key = (c.getAttribute('data-key') || '').toLowerCase();
+      c.style.display = !q || key.indexOf(q) !== -1 ? '' : 'none';
+    });
   }
 
   // Vẽ lại một bài tập tại chỗ (sau khi +set hoặc thay đổi cấu trúc).
@@ -601,13 +1159,86 @@
     if (addBtn) {
       ev.preventDefault();
       onAddSet(addBtn).catch(reportErr);
+      return;
+    }
+    const copyBtn = t.closest('.mwl-copy-btn');
+    if (copyBtn) {
+      ev.preventDefault();
+      onCopyPrescription(copyBtn).catch(reportErr);
+      return;
+    }
+    const plateBtn = t.closest('.mwl-plate-btn');
+    if (plateBtn) {
+      ev.preventDefault();
+      onPlateCalc(plateBtn);
+      return;
+    }
+    const endBtn = t.closest('.mwl-end-btn');
+    if (endBtn) {
+      ev.preventDefault();
+      onEndSession(endBtn).catch(reportErr);
+      return;
+    }
+    const undoBtn = t.closest('.mwl-undo-btn');
+    if (undoBtn) {
+      ev.preventDefault();
+      undoLast().catch(reportErr);
+      return;
+    }
+    const addExBtn = t.closest('.mwl-addex-btn');
+    if (addExBtn) {
+      ev.preventDefault();
+      onAddExercise(addExBtn).catch(reportErr);
+      return;
+    }
+    const focusToggle = t.closest('.mwl-focus-toggle');
+    if (focusToggle) {
+      ev.preventDefault();
+      onToggleFocus();
+      return;
+    }
+    const focusPrev = t.closest('.mwl-focus-prev');
+    if (focusPrev) {
+      ev.preventDefault();
+      onFocusNav(-1);
+      return;
+    }
+    const focusNext = t.closest('.mwl-focus-next');
+    if (focusNext) {
+      ev.preventDefault();
+      onFocusNav(1);
+      return;
+    }
+    // Gập/mở bài khi chạm tiêu đề bài (đặt cuối để không nuốt các nút bên trong).
+    const head = t.closest('.mwl-item-head');
+    if (head && head.getAttribute('data-entry-id')) {
+      ev.preventDefault();
+      onToggleCollapse(head);
     }
   }
 
   function onContainerChange(ev) {
     const t = ev.target;
-    if (t && t.classList && t.classList.contains('mwl-set-input')) {
+    if (!t || !t.classList) return;
+    if (t.classList.contains('mwl-set-input')) {
       onInputChange(t).catch(reportErr);
+      return;
+    }
+    if (t.classList.contains('mwl-note-input')) {
+      const sid = t.getAttribute('data-session-id');
+      commitMeta(sid, { note: t.value }).catch(reportErr);
+      return;
+    }
+    if (t.classList.contains('mwl-bw-input')) {
+      const sid = t.getAttribute('data-session-id');
+      commitMeta(sid, { bodyweight: t.value }).catch(reportErr);
+    }
+  }
+
+  function onContainerInput(ev) {
+    const t = ev.target;
+    if (t && t.classList && t.classList.contains('mwl-client-search')) {
+      onClientSearch(t);
     }
   }
 
@@ -617,6 +1248,7 @@
     container._mwlWired = true;
     container.addEventListener('click', onContainerClick);
     container.addEventListener('change', onContainerChange);
+    container.addEventListener('input', onContainerInput);
   }
 
   // --- Giải Nhật_Ký cho một buổi ------------------------------------------
@@ -712,6 +1344,89 @@
     const dt = new Date(Date.UTC(y, mo - 1, d));
     const wd = WEEKDAYS_VI[dt.getUTCDay()] || '';
     return { main: wd, sub: d + '/' + mo };
+  }
+
+  // Ngày hôm nay theo lịch địa phương (YYYY-MM-DD).
+  function todayISO() {
+    if (_ctx && _ctx.opts && typeof _ctx.opts.todayISO === 'string') return _ctx.opts.todayISO;
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + mm + '-' + dd;
+  }
+
+  // Khách đầu tiên (theo thứ tự) có buổi vào ngày `iso`.
+  function clientWithSessionOn(sessions, clients, iso) {
+    for (const c of clients) {
+      if (sessions.some((s) => String((s && s.clientName) || '') === c && String((s && s.date) || '') === iso)) {
+        return c;
+      }
+    }
+    return null;
+  }
+
+  // Nạp "Lần trước" + biểu đồ tiến bộ mini (bất đồng bộ, không chặn render).
+  function injectHistory(session) {
+    if (!session || !session.clientId) return;
+    const hist = g && g.MWLHistory;
+    if (!hist || typeof hist.getClientHistory !== 'function') return;
+    Promise.resolve()
+      .then(() => hist.getClientHistory(session.clientId, session.date))
+      .then((res) => {
+        if (!res || !_ctx || !_ctx.container || !_ctx.container.getElementsByClassName) return;
+        const byEntry = res.byEntry || {};
+        const byName = res.byName || {};
+        const pick = (eid, item) => {
+          let rec = byEntry[eid];
+          if ((!rec || !rec.series || !rec.series.length) && item && item.name) {
+            rec = byName[String(item.name).trim().toLowerCase()];
+          }
+          return rec;
+        };
+
+        // "Lần trước"
+        const prevs = Array.prototype.slice.call(_ctx.container.getElementsByClassName('mwl-prev'));
+        for (const span of prevs) {
+          const eid = span.getAttribute('data-entry-id');
+          const rec = pick(eid, findItem(session, eid));
+          if (rec && rec.last) {
+            const txt = hist.formatResult(rec.last);
+            if (txt) span.textContent = 'Lần trước: ' + txt;
+          }
+        }
+
+        // Biểu đồ tiến bộ mini (chuỗi kg×reps qua các buổi).
+        const progs = Array.prototype.slice.call(_ctx.container.getElementsByClassName('mwl-prog'));
+        for (const box of progs) {
+          const eid = box.getAttribute('data-entry-id');
+          const rec = pick(eid, findItem(session, eid));
+          const series = rec && Array.isArray(rec.series) ? rec.series : [];
+          if (series.length < 2) continue; // cần ≥2 buổi mới thể hiện tiến bộ
+          renderSeriesInto(box, series);
+        }
+      })
+      .catch(() => {
+        /* lịch sử là phụ trợ — lỗi không ảnh hưởng ghi buổi */
+      });
+  }
+
+  // Vẽ chuỗi tiến bộ dạng chip "14/6 35×10 → 16/6 37.5×10".
+  function renderSeriesInto(box, series) {
+    while (box.firstChild) box.removeChild(box.firstChild);
+    box.appendChild(h('span', { class: 'mwl-prog-label', text: '📈' }));
+    series.forEach((p, i) => {
+      if (i > 0) box.appendChild(h('span', { class: 'mwl-prog-arrow', text: '→' }));
+      const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(p.date || ''));
+      const dlabel = dm ? Number(dm[3]) + '/' + Number(dm[2]) : String(p.date || '');
+      const wv = p.weight != null ? p.weight : '–';
+      const rv = p.reps != null ? p.reps : '–';
+      box.appendChild(
+        h('span', { class: 'mwl-prog-pt' }, [
+          h('b', { text: dlabel + ' ' }),
+          h('span', { text: wv + '×' + rv }),
+        ])
+      );
+    });
   }
 
   // Một chip điều hướng (2 dòng: chính + phụ).
@@ -855,13 +1570,18 @@
       return { rendered: 0 };
     }
 
-    // 1) Khách hàng — chọn mặc định nếu lựa chọn cũ không còn.
+    // 1) Khách hàng — chọn mặc định nếu lựa chọn cũ không còn (ưu tiên khách có buổi HÔM NAY).
     const clients = uniqueClients(sessions);
-    if (!clients.includes(_nav.client)) _nav.client = clients[0];
+    const today = todayISO();
+    if (!clients.includes(_nav.client)) {
+      _nav.client = clientWithSessionOn(sessions, clients, today) || clients[0];
+    }
 
-    // 2) Ngày của khách đã chọn.
+    // 2) Ngày của khách đã chọn (ưu tiên HÔM NAY nếu có).
     const dates = datesForClient(sessions, _nav.client);
-    if (!dates.includes(_nav.date)) _nav.date = dates[0] || null;
+    if (!dates.includes(_nav.date)) {
+      _nav.date = dates.includes(today) ? today : dates[0] || null;
+    }
 
     // 3) Buổi của khách + ngày.
     const daySessions = sessionsForClientDate(sessions, _nav.client, _nav.date);
@@ -870,6 +1590,15 @@
 
     // --- Thanh chọn gọn ---
     const toolbar = h('div', { class: 'mwl-toolbar' }, []);
+
+    // Ô tìm khách khi danh sách đông (mục 7).
+    if (clients.length > 6) {
+      toolbar.appendChild(
+        h('div', { class: 'mwl-searchrow' }, [
+          h('input', { class: 'mwl-client-search', type: 'text', placeholder: '🔍 Tìm khách…' }),
+        ])
+      );
+    }
 
     // Hàng Khách — ẩn nếu chỉ có 1 khách.
     if (clients.length > 1) {
@@ -905,6 +1634,17 @@
     }
     container.appendChild(toolbar);
 
+    // Nút bật/tắt chế độ tập trung 1 bài (mục 8).
+    toolbar.appendChild(
+      h('div', { class: 'mwl-focusrow' }, [
+        h('button', {
+          type: 'button',
+          class: 'mwl-focus-toggle' + (_focus ? ' is-active' : ''),
+          text: _focus ? '🎯 Đang tập trung — xem tất cả' : '🎯 Tập trung 1 bài',
+        }),
+      ])
+    );
+
     // --- Chi tiết buổi đang chọn ---
     const detail = h('div', { class: 'mwl-detail' }, []);
     const selected = daySessions.find((s) => s.sessionId === _nav.sessionId) || daySessions[0] || null;
@@ -917,13 +1657,18 @@
     }
     container.appendChild(detail);
 
+    // Nạp "Lần trước" (bất đồng bộ, không chặn render).
+    if (selected) injectHistory(selected);
+
     // --- Thanh "Lưu & đồng bộ" (dính đáy) ---
     const savebar = h('div', { class: 'mwl-savebar' }, [
+      h('button', { type: 'button', class: 'mwl-undo-btn', title: 'Hoàn tác', text: '↶' }),
       h('button', { type: 'button', class: 'mwl-save-btn', text: '💾 Lưu & đồng bộ' }),
       h('span', { class: 'mwl-save-state', text: '' }),
     ]);
     container.appendChild(savebar);
     refreshSaveStateFromSync();
+    updateUndoBtn();
 
     return { rendered: selected ? 1 : 0 };
   }

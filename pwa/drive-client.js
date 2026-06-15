@@ -769,7 +769,15 @@ async function updateFileContent(fileId, jsonText) {
 async function writeJson(name, obj, expectedModifiedTime) {
   const { folderId, fileName } = await resolveTargetLocation(name);
   const jsonText = JSON.stringify(obj);
-  const existing = await findFileByName(folderId, fileName);
+  let existing = await findFileByName(folderId, fileName);
+
+  // CHỐNG FILE TRÙNG "(1)": nếu không thấy trong thư mục đã chọn, tìm theo tên trên
+  // TOÀN Drive (file do chính app tạo trước đó nhưng truy vấn theo thư mục không thấy
+  // — vd thư mục _coach_data bị nhân bản). Có thì CẬP NHẬT bản đó thay vì tạo mới.
+  if (!existing) {
+    const globalHit = await findFileByNameGlobal(fileName);
+    if (globalHit) existing = globalHit;
+  }
 
   if (existing) {
     // Kiểm phiên bản: chỉ khi gọi viên cung cấp expectedModifiedTime.
@@ -780,8 +788,40 @@ async function writeJson(name, obj, expectedModifiedTime) {
     return updateFileContent(existing.id, jsonText);
   }
 
-  // Chưa tồn tại ⇒ tạo mới (parent = thư mục đích).
+  // Chưa tồn tại ở đâu cả ⇒ tạo mới (parent = thư mục đích).
   return uploadNewFile(folderId, fileName, jsonText);
+}
+
+// ============================================================================
+// listLogFiles — liệt kê các nhật ký trong thư mục con logs/ (cho tính năng "lần trước")
+// ============================================================================
+
+// listLogFiles() → [{ id, name, modifiedTime }] của mọi file trong logs/.
+//   Dùng để app điện thoại đọc lịch sử buổi cũ của khách (so sánh tiến bộ).
+//   Lỗi/không có thư mục ⇒ trả mảng rỗng (không chặn UI).
+async function listLogFiles() {
+  try {
+    const dataFolderId = await resolveDataFolder();
+    const logsFolderId = await ensureSubfolder(dataFolderId, 'logs');
+    const q = [
+      `'${escapeDriveQueryValue(logsFolderId)}' in parents`,
+      `mimeType != '${FOLDER_MIME}'`,
+      'trashed = false',
+    ].join(' and ');
+    const params = new URLSearchParams({
+      q,
+      fields: 'files(id,name,modifiedTime)',
+      orderBy: 'name',
+      pageSize: '1000',
+      spaces: 'drive',
+    });
+    const resp = await driveFetch(`${DRIVE_FILES_ENDPOINT}?${params.toString()}`, { method: 'GET' });
+    if (!resp.ok) return [];
+    const body = await resp.json();
+    return (body && body.files) || [];
+  } catch (_) {
+    return [];
+  }
 }
 
 // ============================================================================
@@ -873,6 +913,7 @@ const api = {
   writeJson,
   findFileByName,
   ensureSubfolder,
+  listLogFiles,
   // lỗi định kiểu (cho phép `instanceof` / kiểm `.code`)
   AuthExpired,
   DriveConfigError,

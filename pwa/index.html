@@ -37,6 +37,7 @@
   -->
   <header class="app-header">
     <h1>Ghi Buổi Tập</h1>
+    <button id="mwl-theme" type="button" class="mwl-theme-btn" aria-label="Đổi nền sáng/tối">🌙</button>
     <span id="connection-status" class="connection-status" data-state="offline">Đang offline</span>
     <span id="mwl-status" class="sync-status" data-state="offline">Ngoại tuyến</span>
   </header>
@@ -75,6 +76,10 @@
   <script src="app-pwa.js"></script>
   <!-- UI ghi set cảm ứng — TASK 10 tạo file này; nạp SAU app-pwa.js để dùng MWLApp.onState(). -->
   <script src="logger-ui.js"></script>
+  <!-- TASK 11 — tính năng nâng cao: đồng hồ nghỉ, máy tính tạ, lịch sử "lần trước". -->
+  <script src="rest-timer.js"></script>
+  <script src="plate-calc.js"></script>
+  <script src="history.js"></script>
 
   <!--
     Google API (Picker) — TUỲ CHỌN: drive-client.js tự nạp động https://apis.google.com/js/api.js
@@ -93,6 +98,26 @@
         });
       });
     }
+  </script>
+
+  <!-- Đổi nền Sáng/Tối (lưu lựa chọn vào máy). Độc lập, không cần build. -->
+  <script>
+    (function () {
+      var KEY = 'mwl-theme';
+      function apply(t) {
+        document.body.classList.toggle('mwl-dark', t === 'dark');
+        var b = document.getElementById('mwl-theme');
+        if (b) b.textContent = t === 'dark' ? '☀️' : '🌙';
+      }
+      try { apply(localStorage.getItem(KEY) || 'light'); } catch (e) { apply('light'); }
+      document.addEventListener('click', function (ev) {
+        var b = ev.target && ev.target.closest ? ev.target.closest('#mwl-theme') : null;
+        if (!b) return;
+        var cur = document.body.classList.contains('mwl-dark') ? 'light' : 'dark';
+        try { localStorage.setItem(KEY, cur); } catch (e) { /* noop */ }
+        apply(cur);
+      });
+    })();
   </script>
 </body>
 </html>

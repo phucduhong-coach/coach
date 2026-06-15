@@ -477,3 +477,531 @@ body {
   .mwl-cell { min-width: 70px; }
   .mwl-cell--step { min-width: 158px; }
 }
+
+/* ==========================================================================
+   TASK 11 — Tính năng nâng cao: tiến độ, ghi chú, lần trước, đồng hồ nghỉ,
+   máy tính tạ, tóm tắt, chế độ tối.
+   ========================================================================== */
+
+/* ---- Nút đổi nền ------------------------------------------------------- */
+.mwl-theme-btn {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+}
+
+/* ---- Thanh tiến độ buổi ------------------------------------------------- */
+.mwl-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+}
+.mwl-progress-track {
+  flex: 1 1 auto;
+  height: 8px;
+  background: var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.mwl-progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--brand), var(--brand-highlight));
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+.mwl-progress-text {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand);
+  white-space: nowrap;
+}
+
+/* ---- Hàng cân nặng + ghi chú buổi -------------------------------------- */
+.mwl-session-extra {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  align-items: stretch;
+}
+.mwl-bw-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mwl-bw-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.mwl-bw-input {
+  width: 72px;
+  min-height: var(--touch);
+  padding: 6px 8px;
+  font-size: 15px;
+  text-align: center;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  outline: none;
+}
+.mwl-note-input {
+  flex: 1 1 auto;
+  min-height: var(--touch);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  resize: vertical;
+  outline: none;
+}
+.mwl-bw-input:focus,
+.mwl-note-input:focus {
+  border-color: var(--brand-highlight);
+  box-shadow: 0 0 0 2px rgba(79, 134, 247, 0.2);
+  background: #fff;
+}
+
+/* ---- Tiêu đề bài: gập, lần trước, đếm set ------------------------------ */
+.mwl-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.mwl-item-chevron {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+.mwl-item-head.is-done .mwl-item-name { color: var(--success); }
+.mwl-item-done-badge {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #fff;
+  background: var(--success);
+  border-radius: 999px;
+}
+.mwl-item-count {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.mwl-prev {
+  flex: 1 1 100%;
+  font-size: 11.5px;
+  color: var(--accent-2);
+  font-weight: 600;
+}
+.mwl-prev:empty { display: none; }
+
+/* ---- Chân bài: nhiều nút ----------------------------------------------- */
+.mwl-item-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.mwl-copy-btn,
+.mwl-plate-btn {
+  min-height: var(--touch);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 9px;
+  cursor: pointer;
+  background: var(--panel-2);
+  color: var(--brand);
+  border: 1px solid var(--line);
+}
+.mwl-copy-btn:active,
+.mwl-plate-btn:active { background: var(--brand-soft); }
+
+/* ---- Chân buổi: nút kết thúc ------------------------------------------- */
+.mwl-session-foot {
+  padding: 14px;
+  border-top: 1px solid var(--line);
+}
+.mwl-end-btn {
+  width: 100%;
+  min-height: var(--touch);
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--success);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.mwl-end-btn:active { filter: brightness(0.92); }
+
+/* ---- Đồng hồ nghỉ (bar nổi đáy) ---------------------------------------- */
+.mwl-rest-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(17, 32, 44, 0.35);
+  max-width: 92vw;
+}
+.mwl-rest-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 84px;
+}
+.mwl-rest-label { font-size: 10.5px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.4px; }
+.mwl-rest-time { font-size: 24px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.mwl-rest-bar.is-low .mwl-rest-time { color: #ffd24d; }
+.mwl-rest-bar.is-done { background: var(--success); }
+.mwl-rest-adj {
+  min-width: 44px;
+  min-height: 40px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.mwl-rest-skip {
+  min-width: 40px;
+  min-height: 40px;
+  font-size: 16px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* ---- Máy tính bánh tạ (modal) ------------------------------------------ */
+.mwl-pc-modal,
+.mwl-summary-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(17, 32, 44, 0.55);
+}
+.mwl-pc-card,
+.mwl-summary-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--panel);
+  color: var(--text);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.mwl-pc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  font-weight: 700;
+  background: var(--brand);
+  color: #fff;
+}
+.mwl-pc-x {
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.mwl-pc-inputs {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+}
+.mwl-pc-inputs label {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.mwl-pc-inputs input {
+  min-height: var(--touch);
+  padding: 8px;
+  font-size: 16px;
+  text-align: center;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.mwl-pc-result { padding: 0 14px 16px; }
+.mwl-pc-headline { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.mwl-pc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  margin-bottom: 6px;
+}
+.mwl-pc-count { font-weight: 800; color: var(--brand); min-width: 36px; }
+.mwl-pc-plate { font-size: 15px; font-weight: 700; }
+.mwl-pc-leftover { font-size: 12px; color: var(--warn); margin-top: 4px; }
+.mwl-pc-empty { color: var(--muted); font-size: 13px; }
+
+/* ---- Tóm tắt kết thúc buổi --------------------------------------------- */
+.mwl-summary-card { text-align: center; }
+.mwl-summary-head { padding: 16px; font-size: 18px; font-weight: 800; background: var(--success); color: #fff; }
+.mwl-summary-client { padding: 12px 16px 0; font-size: 15px; font-weight: 700; }
+.mwl-summary-stats { display: flex; justify-content: center; gap: 28px; padding: 16px; }
+.mwl-summary-stat { display: flex; flex-direction: column; }
+.mwl-summary-num { font-size: 26px; font-weight: 800; color: var(--brand); }
+.mwl-summary-lbl { font-size: 12px; color: var(--muted); }
+.mwl-summary-close {
+  margin: 0 16px 18px;
+  min-height: var(--touch);
+  padding: 10px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--brand);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   CHẾ ĐỘ TỐI (body.mwl-dark) — đảo bảng màu nền/chữ, giữ navy thương hiệu.
+   ========================================================================== */
+body.mwl-dark {
+  --ink: #e7eaf0;
+  --text: #e7eaf0;
+  --muted: #9aa3b2;
+  --line: #2c313a;
+  --panel: #1d2026;
+  --panel-2: #23272f;
+  --bg: #16181d;
+  --brand: #2f5fae;
+  --brand-dark: #1e3f78;
+  --brand-soft: rgba(79, 134, 247, 0.16);
+  --accent-2: #79a4ff;
+}
+body.mwl-dark .mwl-set-input:focus,
+body.mwl-dark .mwl-bw-input:focus,
+body.mwl-dark .mwl-note-input:focus {
+  background: #2a2f38;
+}
+
+/* ---- Xung đột set (mục 2) ---------------------------------------------- */
+.mwl-set-row.has-conflict {
+  position: relative;
+  border-left: 3px solid var(--danger);
+  padding-left: 4px;
+  border-radius: 6px;
+  background: rgba(214, 69, 69, 0.06);
+}
+.mwl-set-row.has-conflict::after {
+  content: '⚠';
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+/* ---- Thống kê bài: 1RM + khối lượng (mục 4) ---------------------------- */
+.mwl-item-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.mwl-stat {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--brand-soft);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+/* ---- Biểu đồ tiến bộ mini (mục 5) -------------------------------------- */
+.mwl-prog {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.mwl-prog:empty { display: none; }
+.mwl-prog-label { font-size: 13px; }
+.mwl-prog-arrow { color: var(--brand-highlight); font-weight: 700; }
+.mwl-prog-pt {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.mwl-prog-pt b { color: var(--brand); }
+
+/* ---- Nút hoàn tác (mục 9) ---------------------------------------------- */
+.mwl-undo-btn {
+  flex: 0 0 auto;
+  width: var(--touch);
+  height: var(--touch);
+  font-size: 20px;
+  color: var(--brand);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.mwl-undo-btn:disabled { opacity: 0.4; }
+
+/* ---- Ô tìm khách (mục 7) ----------------------------------------------- */
+.mwl-searchrow { padding-bottom: 2px; }
+.mwl-client-search {
+  width: 100%;
+  min-height: 38px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: none;
+}
+.mwl-client-search:focus {
+  border-color: var(--brand-highlight);
+  box-shadow: 0 0 0 2px rgba(79, 134, 247, 0.2);
+}
+
+/* ---- Nút thêm bài tự do (mục 6) ---------------------------------------- */
+.mwl-session-foot { display: flex; gap: 10px; flex-wrap: wrap; }
+.mwl-addex-btn {
+  flex: 1 1 auto;
+  min-height: var(--touch);
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--panel-2);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.mwl-end-btn { flex: 2 1 auto; }
+/* Bài tự do: nhãn target khác màu để phân biệt. */
+.mwl-item-target { white-space: nowrap; }
+
+/* ---- Chia sẻ tóm tắt (mục 10) ------------------------------------------ */
+.mwl-summary-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 0 16px 18px;
+}
+.mwl-summary-share {
+  min-height: var(--touch);
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border: 1px solid var(--brand);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.mwl-summary-actions .mwl-summary-close { margin: 0; }
+
+/* ---- Chế độ tập trung 1 bài (mục 8) ------------------------------------ */
+.mwl-focusrow { display: flex; }
+.mwl-focus-toggle {
+  flex: 1 1 auto;
+  min-height: 38px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.mwl-focus-toggle.is-active {
+  color: #fff;
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.mwl-focus-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+}
+.mwl-focus-label { font-size: 14px; font-weight: 800; color: var(--brand); }
+.mwl-focus-prev,
+.mwl-focus-next {
+  min-width: 56px;
+  min-height: var(--touch);
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--brand);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.mwl-focus-prev:disabled,
+.mwl-focus-next:disabled { opacity: 0.35; }

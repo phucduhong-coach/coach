@@ -184,12 +184,52 @@ function addBlankSet(log, entryId, now) {
   return next;
 }
 
+// setLogMeta(log, patch, now) → log MỚI (immutable) đặt các trường meta cấp buổi
+// (vd note: ghi chú cả buổi, bodyweight: cân nặng khách đầu buổi). Chỉ nhận khoá
+// trong META_FIELD_KEYS; bỏ qua khoá lạ. Tăng rev + cập nhật updatedAt.
+function setLogMeta(log, patch, now) {
+  const next = deepClone(log) || {};
+  const p = patch || {};
+  const META_FIELD_KEYS = ['note', 'bodyweight'];
+  let changed = false;
+  for (const k of META_FIELD_KEYS) {
+    if (hasOwn(p, k)) {
+      const v = p[k] == null ? '' : p[k];
+      if (next[k] !== v) {
+        next[k] = v;
+        changed = true;
+      }
+    }
+  }
+  if (changed) {
+    next.rev = (Number(next.rev) || 0) + 1;
+    next.updatedAt = now;
+  }
+  return next;
+}
+
+// ensureEntry(log, entryId, name, now) → log MỚI có entry (không set) nếu chưa có.
+// Dùng cho "buổi tự do": thêm bài tập phát sinh không nằm trong giáo án tuần.
+function ensureEntry(log, entryId, name, now) {
+  const next = deepClone(log) || {};
+  if (!Array.isArray(next.entries)) next.entries = [];
+  const exists = next.entries.some((e) => e && e.entryId === entryId);
+  if (!exists) {
+    next.entries.push({ entryId, name: name != null ? name : '', sets: [], custom: true });
+    next.rev = (Number(next.rev) || 0) + 1;
+    next.updatedAt = now;
+  }
+  return next;
+}
+
 const api = {
   SET_FIELD_KEYS,
   genSetId,
   seedLogFromPack,
   upsertSet,
   addBlankSet,
+  setLogMeta,
+  ensureEntry,
 };
 
 // Phơi cho trình duyệt (window/self) theo quy ước script thuần của PWA,

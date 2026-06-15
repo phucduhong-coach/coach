@@ -14,7 +14,7 @@
 // Requirements: 1.1, 1.2, 1.4, 2.1.
 
 // ---- Phiên bản cache (tăng khi đổi vỏ ứng dụng để buộc cập nhật) -----------
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v10';
 const SHELL_CACHE = `mwl-shell-${CACHE_VERSION}`;
 
 // ---- Danh sách "vỏ" cần precache (tương đối với scope = thư mục pwa/) -------
@@ -32,6 +32,10 @@ const SHELL_ASSETS = [
   './drive-client.js',
   './sync.js',
   './app-pwa.js',
+  './logger-ui.js',
+  './rest-timer.js',
+  './plate-calc.js',
+  './history.js',
 ];
 
 // ---- Máy chủ chỉ-mạng (network-only): Drive API + OAuth -------------------

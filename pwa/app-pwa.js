@@ -415,6 +415,34 @@
     refreshSyncStatus().then(emitState).catch(() => emitState());
   }
 
+  // Khi quay lại app (mở tab/ mở khoá màn) + có mạng ⇒ đồng bộ ngay (YC nâng cao #3).
+  function handleVisibility() {
+    if (!g || !g.document) return;
+    if (g.document.visibilityState !== 'visible') return;
+    renderConnectionStatus();
+    if (isOnline()) {
+      const sync = getSync();
+      try {
+        if (sync && typeof sync.onOnline === 'function') sync.onOnline();
+      } catch (_) {
+        /* không chặn */
+      }
+    }
+    refreshSyncStatus().then(emitState).catch(() => emitState());
+  }
+
+  // Cảnh báo rời trang khi còn dữ liệu CHƯA đồng bộ (tránh mất khi mạng chập chờn).
+  function handleBeforeUnload(ev) {
+    const pending = state && state.sync ? Number(state.sync.pending) || 0 : 0;
+    if (pending > 0) {
+      const msg = 'Còn ' + pending + ' thay đổi chưa đồng bộ. Chờ "Đã đồng bộ" rồi hãy thoát.';
+      ev.preventDefault();
+      ev.returnValue = msg;
+      return msg;
+    }
+    return undefined;
+  }
+
   let _booted = false;
 
   // boot() — hook khởi động. Idempotent (gọi nhiều lần an toàn).
@@ -428,6 +456,10 @@
       g.addEventListener('online', handleOnline);
       g.addEventListener('offline', handleOffline);
       g.addEventListener('mwl-sync', handleSyncEvent);
+      g.addEventListener('beforeunload', handleBeforeUnload);
+    }
+    if (g && g.document && typeof g.document.addEventListener === 'function') {
+      g.document.addEventListener('visibilitychange', handleVisibility);
     }
 
     // First paint: vẽ trạng thái tĩnh ngay từ DOM có sẵn, KHÔNG chờ I/O.
