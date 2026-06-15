@@ -715,6 +715,23 @@
 
   if (g) g.MWLLoggerUI = api;
 
+  // --- Tự vẽ danh sách buổi khi app đã kết nối + có Gói_Lịch_Tuần ----------
+  // Nối với MWLApp (task 9.2): app-pwa phát state (có weekPack) sau khi tải lịch.
+  // Chỉ vẽ lại khi weekPack THỰC SỰ đổi (tránh xoá form đang nhập mỗi lần cập nhật badge).
+  (function autoRenderOnState() {
+    if (!g || !g.MWLApp || typeof g.MWLApp.onState !== 'function') return;
+    let lastPack = null;
+    g.MWLApp.onState(function (st) {
+      if (!st || !st.connected) { lastPack = null; return; }
+      const wp = st.weekPack;
+      if (wp && Array.isArray(wp.sessions) && wp.sessions.length && wp !== lastPack) {
+        lastPack = wp;
+        try { api.renderSessions(wp); }
+        catch (e) { if (g.console) g.console.warn('renderSessions lỗi:', e); }
+      }
+    });
+  })();
+
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = api;
   }
