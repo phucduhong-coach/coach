@@ -1,94 +1,99 @@
 /* ==========================================================================
-   pwa/app.css — Stylesheet vỏ Ứng_Dụng_Ghi_Buổi (mobile-first, dark theme)
-   Feature: mobile-workout-logger · TASK 10.1
-   - Tái dùng bảng token của viewer/app.css (single source palette).
-   - Mobile-first, cảm ứng: chừa chỗ cho vùng chạm 44×44 (task 10.2 hoàn thiện).
-   - Style: session card, exercise row, gợi ý Kê_Đơn (mờ), ô nhập set (base).
+   pwa/app.css — Stylesheet Ứng_Dụng_Ghi_Buổi (mobile-first)
+   Feature: mobile-workout-logger
+   - Đồng bộ TÔNG MÀU với thư viện gốc (viewer/app.css): nền sáng + navy thương hiệu.
+   - Điều hướng GỌN: chọn Khách → Ngày → Buổi (chip) rồi mới hiện chi tiết set.
+   - Thanh "Lưu & đồng bộ" rõ ràng, vùng chạm ≥ 44×44 cho cảm ứng.
    ========================================================================== */
 
 :root {
-  /* Dark theme tokens (đồng bộ viewer/app.css) */
-  --bg: #16181d;
-  --panel: #1d2026;
-  --panel-2: #23272f;
-  --text: #e7eaf0;
-  --muted: #9aa3b2;
-  --line: #2c313a;
-  --accent: #f0883e;
-  --accent-2: #ffa55c;
-  --success: #3fb950;
-  --warn: #d29922;
-  --danger: #f85149;
-  --on-accent: #1a1206;
+  /* Bảng màu sáng + navy — lấy theo viewer/app.css (single source palette) */
+  --ink: #17202c;
+  --text: #17202c;
+  --muted: #667085;
+  --line: #d8dee8;
+  --panel: #ffffff;
+  --panel-2: #f3f6fa;
+  --bg: #eef2f6;
 
-  /* Kích thước cảm ứng (task 10.2 dùng tiếp cho ± / done) */
+  /* NCSF Vietnam brand navy */
+  --brand: #173a78;
+  --brand-dark: #112b57;
+  --brand-soft: rgba(23, 58, 120, 0.10);
+  --brand-highlight: #4f86f7;
+  --accent: #4f86f7;
+  --accent-2: #2a5cb0;
+
+  --success: #2e9e4f;
+  --warn: #b45309;
+  --danger: #d64545;
+  --on-accent: #ffffff;
+
   --touch: 44px;
-  --radius: 12px;
+  --radius: 14px;
   --gap: 10px;
+  --shadow: 0 1px 3px rgba(17, 32, 44, 0.08), 0 1px 2px rgba(17, 32, 44, 0.06);
 }
 
 * { box-sizing: border-box; }
 
-html, body {
-  margin: 0;
-  padding: 0;
-}
+html, body { margin: 0; padding: 0; }
 
 body {
   font-family: Aptos, "Segoe UI", Arial, sans-serif;
   color: var(--text);
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
-  /* An toàn cho notch trên thiết bị standalone */
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
            env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-/* ---- Header vỏ ---------------------------------------------------------- */
+/* ---- Header vỏ (navy thương hiệu) -------------------------------------- */
 
 .app-header {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--gap);
+  gap: 8px;
   padding: 12px 16px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
+  background: var(--brand);
+  color: #fff;
+  border-bottom: 1px solid var(--brand-dark);
+  box-shadow: var(--shadow);
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  flex: 1 1 auto;
+  font-size: 17px;
+  font-weight: 700;
   letter-spacing: 0.2px;
+  color: #fff;
 }
 
-.connection-status {
-  font-size: 12px;
-  font-weight: 600;
+.connection-status,
+.sync-status {
+  font-size: 11px;
+  font-weight: 700;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--panel-2);
-  color: var(--muted);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #e7eefb;
   white-space: nowrap;
 }
-.connection-status[data-state="online"] {
-  color: var(--success);
-  border-color: rgba(63, 185, 80, 0.4);
-}
-.connection-status[data-state="offline"] {
-  color: var(--warn);
-  border-color: rgba(210, 153, 34, 0.4);
-}
+.connection-status[data-state="online"] { color: #d6ffe0; border-color: rgba(214, 255, 224, 0.5); }
+.connection-status[data-state="offline"] { color: #ffe6c2; border-color: rgba(255, 230, 194, 0.5); }
+.sync-status[data-state="synced"] { color: #d6ffe0; }
+.sync-status[data-state="syncing"] { color: #fff0c2; }
+.sync-status[data-state="offline"] { color: #ffe6c2; }
 
 /* ---- Vùng nội dung ------------------------------------------------------ */
 
 .app-root {
-  padding: 12px 12px 32px;
+  padding: 12px 12px 24px;
   max-width: 720px;
   margin: 0 auto;
 }
@@ -99,29 +104,155 @@ body {
   padding: 32px 12px;
 }
 
-/* ---- Danh sách buổi / nhóm theo ngày ------------------------------------ */
+/* ---- Lời nhắc kết nối Google ------------------------------------------- */
+
+.mwl-connect {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+.mwl-connect-msg { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+.mwl-connect-btn {
+  min-height: var(--touch);
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--brand);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.mwl-connect-btn:active { background: var(--brand-dark); }
+
+.mwl-weekinfo {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--muted);
+  text-align: center;
+}
+.mwl-weekinfo[data-state="missing"] { color: var(--warn); }
+
+/* ---- Thanh chọn GỌN: Khách / Ngày / Buổi ------------------------------- */
+
+.mwl-toolbar {
+  position: sticky;
+  top: 56px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.mwl-pickrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mwl-pick-label {
+  flex: 0 0 42px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--brand);
+}
+
+.mwl-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.mwl-chips::-webkit-scrollbar { display: none; }
+
+.mwl-chip {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 46px;
+  padding: 5px 12px;
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  line-height: 1.15;
+  transition: background 0.12s, border-color 0.12s;
+}
+.mwl-chip:active { background: var(--brand-soft); }
+.mwl-chip.is-active {
+  color: #fff;
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.mwl-chip-main { font-size: 13.5px; font-weight: 700; white-space: nowrap; }
+.mwl-chip-sub { font-size: 10.5px; opacity: 0.8; white-space: nowrap; }
+
+/* ---- Thanh "Lưu & đồng bộ" (dính đáy màn hình) ------------------------- */
+
+.mwl-savebar {
+  position: sticky;
+  bottom: 8px;
+  z-index: 18;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(17, 32, 44, 0.18);
+}
+
+.mwl-save-btn {
+  flex: 0 0 auto;
+  min-height: var(--touch);
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--brand);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.mwl-save-btn:active { background: var(--brand-dark); }
+.mwl-save-btn:disabled { opacity: 0.6; }
+
+.mwl-save-state { font-size: 13px; font-weight: 600; color: var(--muted); }
+.mwl-save-state.is-saving { color: var(--accent); }
+.mwl-save-state.is-saved { color: var(--success); }
+.mwl-save-state.is-pending { color: var(--warn); }
+.mwl-save-state.is-error { color: var(--danger); }
+
+/* ---- Danh sách buổi / nhóm theo ngày ----------------------------------- */
 
 .mwl-sessions,
 #mwl-sessions {
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
-.mwl-day-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.mwl-day-header {
-  margin: 4px 2px 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-}
+.mwl-detail { display: flex; flex-direction: column; gap: 14px; }
 
 .mwl-empty,
 .mwl-empty-hint {
@@ -141,6 +272,7 @@ body {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
 .mwl-session-head {
@@ -149,21 +281,13 @@ body {
   justify-content: space-between;
   gap: var(--gap);
   padding: 12px 14px;
-  background: var(--panel-2);
-  border-bottom: 1px solid var(--line);
+  background: var(--brand);
+  color: #fff;
+  border-bottom: 1px solid var(--brand-dark);
 }
 
-.mwl-session-client {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.mwl-session-workout {
-  margin-top: 2px;
-  font-size: 13px;
-  color: var(--muted);
-}
+.mwl-session-client { margin: 0; font-size: 16px; font-weight: 700; color: #fff; }
+.mwl-session-workout { margin-top: 2px; font-size: 12.5px; color: #d7e2f6; }
 
 .mwl-session-meta {
   display: flex;
@@ -172,30 +296,14 @@ body {
   gap: 4px;
   flex: 0 0 auto;
 }
+.mwl-session-time { font-size: 15px; font-weight: 700; color: #fff; }
+.mwl-session-plan { font-size: 11.5px; color: #c7d6ef; text-align: right; }
 
-.mwl-session-time {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-.mwl-session-plan {
-  font-size: 12px;
-  color: var(--muted);
-  text-align: right;
-}
-
-.mwl-session-items {
-  display: flex;
-  flex-direction: column;
-}
+.mwl-session-items { display: flex; flex-direction: column; }
 
 /* ---- Bài tập (exercise row) --------------------------------------------- */
 
-.mwl-item {
-  padding: 12px 14px;
-  border-top: 1px solid var(--line);
-}
+.mwl-item { padding: 12px 14px; border-top: 1px solid var(--line); }
 .mwl-item:first-child { border-top: 0; }
 
 .mwl-item-head {
@@ -204,14 +312,9 @@ body {
   gap: 8px;
   margin-bottom: 8px;
 }
-
-.mwl-item-name {
-  font-size: 15px;
-  font-weight: 600;
-}
-
+.mwl-item-name { font-size: 15px; font-weight: 700; color: var(--brand-dark); }
 .mwl-item-target {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--muted);
   padding: 1px 8px;
   border: 1px solid var(--line);
@@ -220,11 +323,7 @@ body {
 
 /* ---- Lưới set ----------------------------------------------------------- */
 
-.mwl-sets {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.mwl-sets { display: flex; flex-direction: column; gap: 5px; }
 
 .mwl-set-row {
   display: flex;
@@ -232,37 +331,34 @@ body {
   gap: 6px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.mwl-set-row::-webkit-scrollbar { display: none; }
 
 .mwl-col-headrow {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
-
-.mwl-col-head {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+.mwl-col-head { display: flex; align-items: center; justify-content: center; }
 
 .mwl-set-ord {
-  flex: 0 0 52px;
+  flex: 0 0 46px;
   display: flex;
   align-items: center;
   font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
+  font-weight: 700;
+  color: var(--brand);
 }
 
 .mwl-cell {
-  flex: 1 1 64px;
-  min-width: 64px;
+  flex: 1 1 60px;
+  min-width: 60px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 3px;
+  gap: 2px;
 }
 
 .mwl-cell-done {
@@ -271,38 +367,40 @@ body {
   justify-content: center;
 }
 
-/* Gợi ý Kê_Đơn — hiển thị MỜ (YC3.6) */
+/* Gợi ý Kê_Đơn — MỜ + GỌN: 1 dòng, cắt bớt nếu dài (chống dài dòng) */
 .mwl-presc-hint {
-  font-size: 11px;
+  font-size: 10.5px;
   line-height: 1.2;
   color: var(--muted);
-  opacity: 0.6;
   text-align: center;
   min-height: 13px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Ô nhập Set_Thực_Tế — vùng chạm chính ≥ 44×44 (YC3.1) */
+/* Ô nhập Set_Thực_Tế — vùng chạm ≥ 44 (YC3.1) */
 .mwl-set-input {
   width: 100%;
-  min-height: var(--touch); /* ≥44 cho vùng chạm cảm ứng (YC3.1) */
+  min-height: var(--touch);
   padding: 6px 8px;
   font-size: 15px;
   text-align: center;
   color: var(--text);
   background: var(--panel-2);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 9px;
   outline: none;
 }
 .mwl-set-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(240, 136, 62, 0.25);
+  border-color: var(--brand-highlight);
+  box-shadow: 0 0 0 2px rgba(79, 134, 247, 0.22);
+  background: #fff;
 }
-.mwl-set-input.is-text {
-  text-align: left;
-}
+.mwl-set-input.is-text { text-align: left; }
 
-/* Nút "xong" một-chạm — toggle hoàn thành set (YC3.4); vùng chạm ≥44×44 */
+/* Nút "xong" một-chạm (YC3.4) */
 .mwl-done-btn {
   width: var(--touch);
   height: var(--touch);
@@ -313,87 +411,69 @@ body {
   color: var(--muted);
   background: var(--panel-2);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
 }
 .mwl-done-btn.is-done {
-  color: var(--on-accent);
-  background: var(--accent);
-  border-color: var(--accent);
+  color: #fff;
+  background: var(--success);
+  border-color: var(--success);
 }
 
 .mwl-set-row.is-done .mwl-set-input {
-  border-color: rgba(63, 185, 80, 0.35);
+  border-color: rgba(46, 158, 79, 0.4);
+  background: rgba(46, 158, 79, 0.06);
 }
 
 /* ---- Bước nhảy nhanh ± (reps/weight) — YC3.3 --------------------------- */
 
-/* Ô step-field rộng hơn để chứa [−] [ô nhập] [+] (vùng chạm ≥44×44). */
-.mwl-cell--step {
-  flex: 1 1 152px;
-  min-width: 152px;
-}
+.mwl-cell--step { flex: 1 1 150px; min-width: 150px; }
 
-.mwl-stepper {
-  display: flex;
-  align-items: stretch;
-  gap: 4px;
-}
+.mwl-stepper { display: flex; align-items: stretch; gap: 4px; }
+.mwl-stepper .mwl-set-input { flex: 1 1 auto; min-width: 42px; }
 
-.mwl-stepper .mwl-set-input {
-  flex: 1 1 auto;
-  min-width: 44px;
-}
-
-/* Nút ± — vùng chạm ≥44×44 (YC3.1) */
 .mwl-step-btn {
   flex: 0 0 var(--touch);
   width: var(--touch);
-  height: auto;
   min-width: var(--touch);
   min-height: var(--touch);
   font-size: 20px;
   line-height: 1;
   font-weight: 700;
-  color: var(--text);
+  color: var(--brand);
   background: var(--panel-2);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
 }
 .mwl-step-btn:active {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-color: var(--accent);
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
 }
 
 /* ---- Chân bài: nút + set ------------------------------------------------ */
 
-.mwl-item-foot {
-  margin-top: 10px;
-}
-
+.mwl-item-foot { margin-top: 10px; }
 .mwl-addset-btn {
   min-height: var(--touch);
   padding: 8px 16px;
   font-size: 14px;
-  font-weight: 600;
-  color: var(--accent);
+  font-weight: 700;
+  color: var(--brand);
   background: transparent;
   border: 1px dashed var(--line);
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
 }
-.mwl-addset-btn:active {
-  background: var(--panel-2);
-}
+.mwl-addset-btn:active { background: var(--brand-soft); }
 
-/* ---- Mobile-first → tinh chỉnh cho màn rộng hơn ------------------------- */
+/* ---- Màn rộng hơn ------------------------------------------------------- */
 
 @media (min-width: 480px) {
-  .mwl-cell { min-width: 72px; }
-  .mwl-cell--step { min-width: 160px; }
+  .mwl-cell { min-width: 70px; }
+  .mwl-cell--step { min-width: 158px; }
 }

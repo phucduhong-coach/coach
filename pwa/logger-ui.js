@@ -275,7 +275,7 @@
       const cell = h('div', { class: cellClass, 'data-field': field }, [
         h('div', {
           class: 'mwl-presc-hint',
-          title: 'Kê đơn',
+          title: isFilled(presVal) ? 'Kê đơn: ' + String(presVal) : 'Kê đơn',
           text: isFilled(presVal) ? String(presVal) : '·',
         }),
         buildFieldControl(sessionId, entryId, ordinal, field, actualVal, opts),
@@ -359,8 +359,14 @@
 
     const head = h('header', { class: 'mwl-session-head' }, [
       h('div', { class: 'mwl-session-titles' }, [
-        h('h3', { class: 'mwl-session-client', text: session.clientName != null ? session.clientName : '' }),
-        h('div', { class: 'mwl-session-workout', text: session.workoutName != null ? session.workoutName : '' }),
+        h('h3', {
+          class: 'mwl-session-client',
+          text: isFilled(session.workoutName) ? String(session.workoutName) : 'Buổi tập',
+        }),
+        h('div', {
+          class: 'mwl-session-workout',
+          text: session.clientName != null ? String(session.clientName) : '',
+        }),
       ]),
       h('div', { class: 'mwl-session-meta' }, meta),
     ]);
@@ -565,6 +571,20 @@
   function onContainerClick(ev) {
     const t = ev.target;
     if (!t || typeof t.closest !== 'function') return;
+    // Chip điều hướng: chọn Khách / Ngày / Buổi.
+    const chipEl = t.closest('.mwl-chip');
+    if (chipEl) {
+      ev.preventDefault();
+      onNav(chipEl);
+      return;
+    }
+    // Nút Lưu & đồng bộ.
+    const saveBtn = t.closest('.mwl-save-btn');
+    if (saveBtn) {
+      ev.preventDefault();
+      onSave().catch(reportErr);
+      return;
+    }
     const stepBtn = t.closest('.mwl-step-btn');
     if (stepBtn) {
       ev.preventDefault();
@@ -644,15 +664,175 @@
     while (node.firstChild) node.removeChild(node.firstChild);
   }
 
+  // ========================================================================
+  // ĐIỀU HƯỚNG GỌN (TASK 11): chọn Khách → Ngày → Buổi rồi mới hiện chi tiết.
+  // _nav giữ lựa chọn hiện tại; bền qua các lần render lại (chip bấm → re-render).
+  // ========================================================================
+  const _nav = { client: null, date: null, sessionId: null };
+
+  function sessionsOf() {
+    const wp = _ctx && _ctx.weekPack;
+    return wp && Array.isArray(wp.sessions) ? wp.sessions : [];
+  }
+
+  function uniqueClients(sessions) {
+    const seen = [];
+    for (const s of sessions) {
+      const name = s && s.clientName != null ? String(s.clientName) : '';
+      if (!seen.includes(name)) seen.push(name);
+    }
+    return seen;
+  }
+
+  function datesForClient(sessions, client) {
+    const seen = [];
+    for (const s of sessions) {
+      if (String((s && s.clientName) || '') !== client) continue;
+      const d = s && s.date != null ? String(s.date) : '';
+      if (!seen.includes(d)) seen.push(d);
+    }
+    seen.sort((a, b) => (a === b ? 0 : a === '' ? 1 : b === '' ? -1 : a < b ? -1 : 1));
+    return seen;
+  }
+
+  function sessionsForClientDate(sessions, client, date) {
+    return sessions
+      .filter((s) => String((s && s.clientName) || '') === client && String((s && s.date) || '') === date)
+      .sort((x, y) => compareTime(x && x.time, y && y.time));
+  }
+
+  // Nhãn ngày thân thiện: "T6" + "14/6".
+  const WEEKDAYS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  function formatDateLabel(date) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date || ''));
+    if (!m) return { main: date || 'Chưa đặt', sub: '' };
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+    const dt = new Date(Date.UTC(y, mo - 1, d));
+    const wd = WEEKDAYS_VI[dt.getUTCDay()] || '';
+    return { main: wd, sub: d + '/' + mo };
+  }
+
+  // Một chip điều hướng (2 dòng: chính + phụ).
+  function chip(navType, key, mainText, subText, active) {
+    const kids = [h('span', { class: 'mwl-chip-main', text: mainText })];
+    if (isFilled(subText)) kids.push(h('span', { class: 'mwl-chip-sub', text: subText }));
+    return h(
+      'button',
+      {
+        type: 'button',
+        class: 'mwl-chip' + (active ? ' is-active' : ''),
+        'data-nav': navType,
+        'data-key': key,
+      },
+      kids
+    );
+  }
+
+  function chipRow(label, chips) {
+    return h('div', { class: 'mwl-pickrow' }, [
+      h('span', { class: 'mwl-pick-label', text: label }),
+      h('div', { class: 'mwl-chips' }, chips),
+    ]);
+  }
+
+  // Bấm chip → cập nhật lựa chọn (đổi khách reset ngày+buổi; đổi ngày reset buổi).
+  function onNav(chipEl) {
+    const type = chipEl.getAttribute('data-nav');
+    const key = chipEl.getAttribute('data-key');
+    if (type === 'client') {
+      if (_nav.client !== key) {
+        _nav.client = key;
+        _nav.date = null;
+        _nav.sessionId = null;
+      }
+    } else if (type === 'date') {
+      if (_nav.date !== key) {
+        _nav.date = key;
+        _nav.sessionId = null;
+      }
+    } else if (type === 'session') {
+      _nav.sessionId = key;
+    }
+    rerenderAll();
+  }
+
+  function rerenderAll() {
+    if (!_ctx) return;
+    renderSessions(_ctx.weekPack, _ctx.opts).catch(reportErr);
+  }
+
+  // --- Nút "Lưu & đồng bộ" -------------------------------------------------
+  function setSaveState(state, summary) {
+    if (!_ctx || !_ctx.container || !_ctx.container.querySelector) return;
+    const el = _ctx.container.querySelector('.mwl-save-state');
+    const btn = _ctx.container.querySelector('.mwl-save-btn');
+    if (!el) return;
+    let txt = '';
+    let cls = 'mwl-save-state';
+    if (state === 'saving') {
+      txt = 'Đang lưu…';
+      cls += ' is-saving';
+    } else if (state === 'saved') {
+      txt = 'Đã lưu ✓';
+      cls += ' is-saved';
+    } else if (state === 'pending') {
+      const n = summary && summary.pending ? Number(summary.pending) : 0;
+      txt = n > 0 ? 'Còn ' + n + ' chờ đồng bộ' : 'Đã lưu ✓';
+      cls += n > 0 ? ' is-pending' : ' is-saved';
+    } else if (state === 'error') {
+      txt = 'Lỗi mạng — thử lại';
+      cls += ' is-error';
+    }
+    el.className = cls;
+    el.textContent = txt;
+    if (btn) btn.disabled = state === 'saving';
+  }
+
+  async function onSave() {
+    const sync = (_ctx && _ctx.deps && _ctx.deps.sync) || (g && g.MWLSync) || null;
+    setSaveState('saving');
+    if (!sync || typeof sync.manualSync !== 'function') {
+      setSaveState('saved');
+      return;
+    }
+    try {
+      const r = await sync.manualSync();
+      if (r && r.authExpired) {
+        setSaveState('error');
+        return;
+      }
+      setSaveState('pending', r);
+    } catch (e) {
+      reportErr(e);
+      setSaveState('error');
+    }
+  }
+
+  // Phản ánh trạng thái đồng bộ hiện tại lên nhãn cạnh nút Lưu.
+  function refreshSaveStateFromSync() {
+    const sync = (_ctx && _ctx.deps && _ctx.deps.sync) || (g && g.MWLSync) || null;
+    if (!sync || typeof sync.syncStatus !== 'function') return;
+    Promise.resolve()
+      .then(() => sync.syncStatus())
+      .then((st) => {
+        if (!st) return;
+        setSaveState('pending', { pending: st.pending || 0 });
+      })
+      .catch(() => {
+        /* best-effort */
+      });
+  }
+
   // --- Điểm vào chính ------------------------------------------------------
-  // renderSessions(weekPack, opts?) → render danh sách buổi + wiring tương tác.
+  // renderSessions(weekPack, opts?) → thanh chọn Khách/Ngày/Buổi + chi tiết 1 buổi.
   // opts: { container?, logsBySession?, store?, logModel?, sync?, steps?, now? }
   async function renderSessions(weekPack, opts) {
-    opts = opts || {};
+    opts = opts || (_ctx && _ctx.opts) || {};
     const container = resolveContainer(opts);
     if (!container) return { rendered: 0 }; // môi trường không có DOM (vd. Node).
 
-    // Khởi tạo context tương tác cho các handler (task 10.2).
     _ctx = {
       container,
       weekPack: weekPack || { sessions: [] },
@@ -664,37 +844,88 @@
     wireContainer(container);
     clearNode(container);
 
-    const sessions = weekPack && Array.isArray(weekPack.sessions) ? weekPack.sessions : [];
+    const sessions = sessionsOf();
     if (sessions.length === 0) {
       container.appendChild(
         h('p', {
           class: 'mwl-empty',
-          text: 'Chưa có Gói_Lịch_Tuần. Hãy "Đưa lịch tuần ra điện thoại" từ máy tính.',
+          text: 'Chưa có lịch tuần. Hãy "Đưa lịch tuần ra điện thoại" từ máy tính.',
         })
       );
       return { rendered: 0 };
     }
 
-    const groups = groupByDate(sessions);
-    const multiDay = groups.length > 1;
-    let rendered = 0;
+    // 1) Khách hàng — chọn mặc định nếu lựa chọn cũ không còn.
+    const clients = uniqueClients(sessions);
+    if (!clients.includes(_nav.client)) _nav.client = clients[0];
 
-    for (const group of groups) {
-      const groupNode = h('div', { class: 'mwl-day-group', 'data-date': group.date }, []);
-      if (multiDay) {
-        groupNode.appendChild(h('h2', { class: 'mwl-day-header', text: group.date || 'Chưa đặt ngày' }));
-      }
-      for (const session of group.sessions) {
-        // eslint-disable-next-line no-await-in-loop
-        const log = await resolveLog(session, opts);
-        if (session && session.sessionId != null) _ctx.logs.set(session.sessionId, log);
-        groupNode.appendChild(buildSession(session, log, opts));
-        rendered++;
-      }
-      container.appendChild(groupNode);
+    // 2) Ngày của khách đã chọn.
+    const dates = datesForClient(sessions, _nav.client);
+    if (!dates.includes(_nav.date)) _nav.date = dates[0] || null;
+
+    // 3) Buổi của khách + ngày.
+    const daySessions = sessionsForClientDate(sessions, _nav.client, _nav.date);
+    const sessionIds = daySessions.map((s) => s.sessionId);
+    if (!sessionIds.includes(_nav.sessionId)) _nav.sessionId = sessionIds[0] || null;
+
+    // --- Thanh chọn gọn ---
+    const toolbar = h('div', { class: 'mwl-toolbar' }, []);
+
+    // Hàng Khách — ẩn nếu chỉ có 1 khách.
+    if (clients.length > 1) {
+      toolbar.appendChild(
+        chipRow(
+          'Khách',
+          clients.map((c) => chip('client', c, c || '—', '', c === _nav.client))
+        )
+      );
     }
+    // Hàng Ngày.
+    toolbar.appendChild(
+      chipRow(
+        'Ngày',
+        dates.map((d) => {
+          const lab = formatDateLabel(d);
+          return chip('date', d, lab.main, lab.sub, d === _nav.date);
+        })
+      )
+    );
+    // Hàng Buổi — ẩn nếu chỉ có 1 buổi trong ngày.
+    if (daySessions.length > 1) {
+      toolbar.appendChild(
+        chipRow(
+          'Buổi',
+          daySessions.map((s) => {
+            const t = isFilled(s.time) ? String(s.time) : '';
+            const nm = isFilled(s.workoutName) ? String(s.workoutName) : 'Buổi tập';
+            return chip('session', s.sessionId, nm, t, s.sessionId === _nav.sessionId);
+          })
+        )
+      );
+    }
+    container.appendChild(toolbar);
 
-    return { rendered };
+    // --- Chi tiết buổi đang chọn ---
+    const detail = h('div', { class: 'mwl-detail' }, []);
+    const selected = daySessions.find((s) => s.sessionId === _nav.sessionId) || daySessions[0] || null;
+    if (selected) {
+      const log = await resolveLog(selected, opts);
+      if (selected.sessionId != null) _ctx.logs.set(selected.sessionId, log);
+      detail.appendChild(buildSession(selected, log, opts));
+    } else {
+      detail.appendChild(h('p', { class: 'mwl-empty-hint', text: 'Ngày này chưa có buổi tập.' }));
+    }
+    container.appendChild(detail);
+
+    // --- Thanh "Lưu & đồng bộ" (dính đáy) ---
+    const savebar = h('div', { class: 'mwl-savebar' }, [
+      h('button', { type: 'button', class: 'mwl-save-btn', text: '💾 Lưu & đồng bộ' }),
+      h('span', { class: 'mwl-save-state', text: '' }),
+    ]);
+    container.appendChild(savebar);
+    refreshSaveStateFromSync();
+
+    return { rendered: selected ? 1 : 0 };
   }
 
   const api = {
